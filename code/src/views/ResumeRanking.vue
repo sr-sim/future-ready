@@ -1,20 +1,23 @@
 <template>
-  <div class="min-h-screen bg-gray-50"> 
-    
-    <header class="bg-white shadow-sm border-b">
+  <div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <!-- Header -->
+    <header class="bg-white shadow-lg border-b border-gray-200">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16">
           <div class="flex items-center">
-            <div class="h-8 w-8 bg-indigo-600 rounded-lg flex items-center justify-center mr-3">
-              <TrendingUpIcon class="h-5 w-5 text-white" />
+            <div class="h-10 w-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center mr-3">
+              <StarIcon class="h-6 w-6 text-white" />
             </div>
-            <h1 class="text-xl font-semibold text-gray-900">Resume Analysis Results</h1>
+            <div>
+              <h1 class="text-xl font-bold text-gray-900">Resume Analysis Result</h1>
+            </div>
           </div>
           <div class="flex items-center space-x-4">
-            <button class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition duration-200">
-              Export Results
-            </button>
-            <button class="text-gray-400 hover:text-gray-600">
+            <div class="flex items-center space-x-2 bg-gray-100 px-3 py-2 rounded-lg">
+              <div class="h-2 w-2 bg-green-500 rounded-full"></div>
+              <span class="text-sm text-gray-700">HR Manager</span>
+            </div>
+            <button class="text-gray-400 hover:text-gray-600 transition-colors">
               <LogOutIcon class="h-5 w-5" />
             </button>
           </div>
@@ -30,7 +33,7 @@
             {{ jobDetails.department }}
           </span>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
           <div class="text-center p-4 bg-gray-50 rounded-lg">
             <div class="text-2xl font-bold text-gray-900">{{ resumeResults.length }}</div>
             <div class="text-sm text-gray-600">Total Resumes</div>
@@ -121,8 +124,6 @@
                 </div>
               </div>
             </div>
-
-             Skills Match 
             <div class="mb-4">
               <h4 class="text-sm font-medium text-gray-700 mb-2">Skills Match</h4>
               <div class="flex flex-wrap gap-2">
