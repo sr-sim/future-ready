@@ -1,6 +1,5 @@
 <template>
   <div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-    <!-- Header -->
     <header class="bg-white shadow-lg border-b border-gray-200">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16">
@@ -27,7 +26,6 @@
     </header>
 
     <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-      <!-- Welcome Section -->
       <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-xl p-8 mb-8 text-white">
         <div class="flex items-center justify-between">
           <div>
@@ -42,7 +40,6 @@
         </div>
       </div>
 
-      <!-- Stats Cards -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
           <div class="flex items-center justify-between mb-4">
@@ -89,9 +86,7 @@
         </div>
       </div>
 
-      <!-- Main Content Grid -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <!-- Recent Activity -->
         <div class="lg:col-span-2">
           <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
             <div class="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4">
@@ -122,9 +117,7 @@
           </div>
         </div>
 
-        <!-- Quick Actions & Top Candidates -->
         <div class="space-y-8">
-          <!-- Quick Actions -->
           <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
             <div class="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-4">
               <div class="flex items-center text-white">
