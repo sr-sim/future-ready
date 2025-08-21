@@ -3,9 +3,6 @@
     <div class="max-w-md w-full space-y-8">
       <div class="bg-white rounded-2xl shadow-xl p-8">
         <div class="text-center mb-8">
-          <div class="mx-auto h-12 w-12 bg-indigo-600 rounded-xl flex items-center justify-center mb-4">
-            <UserIcon class="h-6 w-6 text-white" />
-          </div>
           <h2 class="text-3xl font-bold text-gray-900">HR Portal</h2>
           <p class="text-gray-600 mt-2">Sign in to your talent acquisition dashboard</p>
         </div>
