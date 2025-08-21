@@ -116,8 +116,8 @@ const handleLogin = async () => {
   await new Promise(resolve => setTimeout(resolve, 2000))
   
   console.log('Login attempt:', form)
-  router.push('/upload')
-  
+  router.push('/dashboard')
+
   isLoading.value = false
 }
 </script>
