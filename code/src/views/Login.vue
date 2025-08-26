@@ -1,123 +1,806 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-    <div class="max-w-md w-full space-y-8">
-      <div class="bg-white rounded-2xl shadow-xl p-8">
-        <div class="text-center mb-8">
-          <h2 class="text-3xl font-bold text-gray-900">HR Portal</h2>
-          <p class="text-gray-600 mt-2">Sign in to your talent acquisition dashboard</p>
+  <div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <!-- Header -->
+    <header class="bg-white shadow-lg border-b border-gray-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+          <div class="flex items-center">
+            <div class="h-10 w-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center mr-3">
+              <UserPlusIcon class="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h1 class="text-xl font-bold text-gray-900">TalentFlow AI</h1>
+              <p class="text-sm text-gray-500">Intelligent Talent Acquisition Platform</p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-4">
+            <span class="text-sm text-gray-600">Already have an account?</span>
+            <button
+              @click="showLoginModal = true"
+              class="text-blue-600 hover:text-blue-700 font-medium text-sm transition-colors"
+            >
+              Sign In
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="max-w-6xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+      <!-- Get Started Section -->
+      <div class="text-center mb-12">
+        <div class="inline-flex items-center bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full px-6 py-2 mb-6">
+          <SparklesIcon class="h-5 w-5 text-white mr-2" />
+          <span class="text-white font-semibold">AI-Powered Talent Acquisition</span>
+        </div>
+        <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+          Join <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">TalentFlow AI</span>
+        </h2>
+        <p class="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
+          Choose your account type to get started with our intelligent talent acquisition platform
+        </p>
+      </div>
+
+      <!-- Account Type Selection (Always visible) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
+        <!-- Company Account -->
+        <div
+          @click="selectAccountType('company')"
+          class="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 cursor-pointer hover:shadow-2xl transition-all duration-300 transform hover:scale-105 group"
+        >
+          <div class="text-center">
+            <div class="h-20 w-20 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+              <BuildingIcon class="h-10 w-10 text-white" />
+            </div>
+            <h3 class="text-2xl font-bold text-gray-900 mb-4">Company Account</h3>
+            <p class="text-gray-600 mb-6">
+              Post jobs, manage applications, and find the perfect candidates for your organization
+            </p>
+            <div class="space-y-2 text-left">
+              <div class="flex items-center text-sm text-gray-700">
+                <CheckCircleIcon class="h-4 w-4 text-green-600 mr-2" />
+                <span>Post unlimited job listings</span>
+              </div>
+              <div class="flex items-center text-sm text-gray-700">
+                <CheckCircleIcon class="h-4 w-4 text-green-600 mr-2" />
+                <span>AI-powered candidate matching</span>
+              </div>
+              <div class="flex items-center text-sm text-gray-700">
+                <CheckCircleIcon class="h-4 w-4 text-green-600 mr-2" />
+                <span>Resume analysis and ranking</span>
+              </div>
+              <div class="flex items-center text-sm text-gray-700">
+                <CheckCircleIcon class="h-4 w-4 text-green-600 mr-2" />
+                <span>Automated screening tools</span>
+              </div>
+              <div class="flex items-center text-sm text-gray-700">
+                <CheckCircleIcon class="h-4 w-4 text-green-600 mr-2" />
+                <span>Analytics dashboard</span>
+              </div>
+            </div>
+            <div class="mt-6">
+              <div class="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold group-hover:from-purple-700 group-hover:to-pink-700 transition-all">
+                Sign Up as Company
+              </div>
+            </div>
+          </div>
         </div>
 
-        <form @submit.prevent="handleLogin" class="space-y-6">
-          <div>
-            <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
-              Email Address
-            </label>
-            <div class="relative">
-              <input
-                id="email"
-                v-model="form.email"
-                type="email"
-                required
-                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200"
-                placeholder="hr@company.com"
+        <!-- Job Seeker Account -->
+        <div
+          @click="selectAccountType('jobseeker')"
+          class="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 cursor-pointer hover:shadow-2xl transition-all duration-300 transform hover:scale-105 group"
+        >
+          <div class="text-center">
+            <div class="h-20 w-20 bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+              <UserIcon class="h-10 w-10 text-white" />
+            </div>
+            <h3 class="text-2xl font-bold text-gray-900 mb-4">Job Seeker Account</h3>
+            <p class="text-gray-600 mb-6">
+              Create your professional profile and discover amazing career opportunities
+            </p>
+            <div class="space-y-2 text-left">
+              <div class="flex items-center text-sm text-gray-700">
+                <CheckCircleIcon class="h-4 w-4 text-green-600 mr-2" />
+                <span>AI-powered resume builder</span>
+              </div>
+              <div class="flex items-center text-sm text-gray-700">
+                <CheckCircleIcon class="h-4 w-4 text-green-600 mr-2" />
+                <span>Smart job matching</span>
+              </div>
+              <div class="flex items-center text-sm text-gray-700">
+                <CheckCircleIcon class="h-4 w-4 text-green-600 mr-2" />
+                <span>Application tracking</span>
+              </div>
+              <div class="flex items-center text-sm text-gray-700">
+                <CheckCircleIcon class="h-4 w-4 text-green-600 mr-2" />
+                <span>Career insights and tips</span>
+              </div>
+              <div class="flex items-center text-sm text-gray-700">
+                <CheckCircleIcon class="h-4 w-4 text-green-600 mr-2" />
+                <span>Real-time notifications</span>
+              </div>
+            </div>
+            <div class="mt-6">
+              <div class="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl font-semibold group-hover:from-green-700 group-hover:to-emerald-700 transition-all">
+                Sign Up as Job Seeker
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Company Brief Section -->
+      <div class="space-y-12">
+        <!-- What We Do Section -->
+        <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+          <div class="bg-gradient-to-r from-indigo-600 to-blue-600 px-6 py-4">
+            <div class="flex items-center text-white">
+              <SparklesIcon class="h-6 w-6 mr-3" />
+              <h3 class="text-xl font-bold">About TalentFlow AI</h3>
+            </div>
+          </div>
+          <div class="p-8">
+            <div class="text-center mb-8">
+              <h4 class="text-2xl font-bold text-gray-900 mb-4">
+                Revolutionize Your <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Hiring Process</span>
+              </h4>
+              <p class="text-lg text-gray-600 max-w-3xl mx-auto">
+                TalentFlow AI is an intelligent talent acquisition automation platform that streamlines recruitment 
+                for companies and empowers job seekers to find their perfect career match using cutting-edge AI technology.
+              </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <!-- For Companies -->
+              <div class="bg-purple-50 rounded-xl p-6 border border-purple-200">
+                <div class="flex items-center mb-4">
+                  <div class="h-10 w-10 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center mr-3">
+                    <BuildingIcon class="h-5 w-5 text-white" />
+                  </div>
+                  <h5 class="text-lg font-bold text-purple-900">For Companies</h5>
+                </div>
+                <div class="space-y-3">
+                  <div class="flex items-start">
+                    <ZapIcon class="h-4 w-4 text-purple-600 mr-2 mt-1 flex-shrink-0" />
+                    <div>
+                      <p class="font-semibold text-purple-900 text-sm">Automated Resume Screening</p>
+                      <p class="text-xs text-purple-700">AI analyzes and ranks resumes saving hours of manual review</p>
+                    </div>
+                  </div>
+                  <div class="flex items-start">
+                    <TargetIcon class="h-4 w-4 text-purple-600 mr-2 mt-1 flex-shrink-0" />
+                    <div>
+                      <p class="font-semibold text-purple-900 text-sm">Smart Candidate Matching</p>
+                      <p class="text-xs text-purple-700">Advanced algorithms match candidates based on skills and fit</p>
+                    </div>
+                  </div>
+                  <div class="flex items-start">
+                    <BarChartIcon class="h-4 w-4 text-purple-600 mr-2 mt-1 flex-shrink-0" />
+                    <div>
+                      <p class="font-semibold text-purple-900 text-sm">Analytics & Insights</p>
+                      <p class="text-xs text-purple-700">Track hiring metrics with comprehensive dashboards</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- For Job Seekers -->
+              <div class="bg-green-50 rounded-xl p-6 border border-green-200">
+                <div class="flex items-center mb-4">
+                  <div class="h-10 w-10 bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg flex items-center justify-center mr-3">
+                    <UserIcon class="h-5 w-5 text-white" />
+                  </div>
+                  <h5 class="text-lg font-bold text-green-900">For Job Seekers</h5>
+                </div>
+                <div class="space-y-3">
+                  <div class="flex items-start">
+                    <FileTextIcon class="h-4 w-4 text-green-600 mr-2 mt-1 flex-shrink-0" />
+                    <div>
+                      <p class="font-semibold text-green-900 text-sm">AI-Powered Resume Builder</p>
+                      <p class="text-xs text-green-700">Create professional resumes with AI suggestions</p>
+                    </div>
+                  </div>
+                  <div class="flex items-start">
+                    <SearchIcon class="h-4 w-4 text-green-600 mr-2 mt-1 flex-shrink-0" />
+                    <div>
+                      <p class="font-semibold text-green-900 text-sm">Smart Job Matching</p>
+                      <p class="text-xs text-green-700">Get matched with relevant positions automatically</p>
+                    </div>
+                  </div>
+                  <div class="flex items-start">
+                    <TrendingUpIcon class="h-4 w-4 text-green-600 mr-2 mt-1 flex-shrink-0" />
+                    <div>
+                      <p class="font-semibold text-green-900 text-sm">Career Insights</p>
+                      <p class="text-xs text-green-700">Receive personalized career advice and market insights</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Key Features Section -->
+        <div class="bg-gradient-to-r from-gray-900 to-blue-900 rounded-2xl shadow-xl text-white p-8">
+          <div class="text-center mb-8">
+            <h3 class="text-2xl font-bold mb-2">Why Choose TalentFlow AI?</h3>
+            <p class="text-blue-200">Join thousands who have transformed their hiring experience</p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div class="text-center">
+              <div class="h-12 w-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center mx-auto mb-3">
+                <BrainIcon class="h-6 w-6 text-white" />
+              </div>
+              <h4 class="font-bold text-white mb-2">AI-Powered</h4>
+              <p class="text-xs text-blue-200">Advanced machine learning for precise matching</p>
+            </div>
+            <div class="text-center">
+              <div class="h-12 w-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mx-auto mb-3">
+                <ClockIcon class="h-6 w-6 text-white" />
+              </div>
+              <h4 class="font-bold text-white mb-2">Time-Saving</h4>
+              <p class="text-xs text-blue-200">Reduce hiring time by up to 70%</p>
+            </div>
+            <div class="text-center">
+              <div class="h-12 w-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mx-auto mb-3">
+                <ShieldIcon class="h-6 w-6 text-white" />
+              </div>
+              <h4 class="font-bold text-white mb-2">Secure</h4>
+              <p class="text-xs text-blue-200">Enterprise-grade security and privacy</p>
+            </div>
+            <div class="text-center">
+              <div class="h-12 w-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center mx-auto mb-3">
+                <UsersIcon class="h-6 w-6 text-white" />
+              </div>
+              <h4 class="font-bold text-white mb-2">User-Friendly</h4>
+              <p class="text-xs text-blue-200">Intuitive interface for everyone</p>
+            </div>
+          </div>
+          
+          <!-- Success Metrics -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8 pt-8 border-t border-blue-800">
+            <div class="text-center">
+              <div class="text-3xl font-bold text-green-400 mb-1">500+</div>
+              <p class="text-blue-200 text-sm">Companies Using Our Platform</p>
+            </div>
+            <div class="text-center">
+              <div class="text-3xl font-bold text-green-400 mb-1">50K+</div>
+              <p class="text-blue-200 text-sm">Successful Job Placements</p>
+            </div>
+            <div class="text-center">
+              <div class="text-3xl font-bold text-green-400 mb-1">70%</div>
+              <p class="text-blue-200 text-sm">Reduction in Hiring Time</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sign Up Form Modal -->
+    <div
+      v-if="selectedAccountType"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+    >
+      <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+        <div 
+          :class="[
+            'px-6 py-4',
+            selectedAccountType === 'company' 
+              ? 'bg-gradient-to-r from-purple-600 to-pink-600' 
+              : 'bg-gradient-to-r from-green-600 to-emerald-600'
+          ]"
+        >
+          <div class="flex items-center justify-between text-white">
+            <div class="flex items-center">
+              <component 
+                :is="selectedAccountType === 'company' ? BuildingIcon : UserIcon" 
+                class="h-6 w-6 mr-3" 
               />
-              <MailIcon class="absolute right-3 top-3.5 h-5 w-5 text-gray-400" />
+              <h2 class="text-xl font-bold">
+                {{ selectedAccountType === 'company' ? 'Company Registration' : 'Job Seeker Registration' }}
+              </h2>
+            </div>
+            <button
+              @click="selectedAccountType = null"
+              class="text-white hover:text-gray-200 transition-colors"
+            >
+              <XIcon class="h-6 w-6" />
+            </button>
+          </div>
+        </div>
+
+        <form @submit.prevent="handleSignUp" class="p-6 space-y-4 overflow-y-auto max-h-[calc(90vh-80px)]">
+          <!-- Company-specific fields -->
+          <div v-if="selectedAccountType === 'company'" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Company Name *</label>
+                <input
+                  v-model="formData.companyName"
+                  type="text"
+                  required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
+                  placeholder="Enter company name"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Industry *</label>
+                <select
+                  v-model="formData.industry"
+                  required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
+                >
+                  <option value="">Select industry</option>
+                  <option value="technology">Technology</option>
+                  <option value="healthcare">Healthcare</option>
+                  <option value="finance">Finance</option>
+                  <option value="education">Education</option>
+                  <option value="retail">Retail</option>
+                  <option value="manufacturing">Manufacturing</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Company Size *</label>
+                <select
+                  v-model="formData.companySize"
+                  required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
+                >
+                  <option value="">Select company size</option>
+                  <option value="1-10">1-10 employees</option>
+                  <option value="11-50">11-50 employees</option>
+                  <option value="51-200">51-200 employees</option>
+                  <option value="201-1000">201-1000 employees</option>
+                  <option value="1000+">1000+ employees</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Website</label>
+                <input
+                  v-model="formData.website"
+                  type="url"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
+                  placeholder="https://company.com"
+                />
+              </div>
             </div>
           </div>
 
-          <div>
-            <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
-              Password
-            </label>
-            <div class="relative">
+          <!-- Job Seeker-specific fields -->
+          <div v-if="selectedAccountType === 'jobseeker'" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">First Name *</label>
+                <input
+                  v-model="formData.firstName"
+                  type="text"
+                  required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all text-sm"
+                  placeholder="Enter first name"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Last Name *</label>
+                <input
+                  v-model="formData.lastName"
+                  type="text"
+                  required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all text-sm"
+                  placeholder="Enter last name"
+                />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Phone Number *</label>
+                <input
+                  v-model="formData.phone"
+                  type="tel"
+                  required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all text-sm"
+                  placeholder="+1 (555) 123-4567"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Location *</label>
+                <input
+                  v-model="formData.location"
+                  type="text"
+                  required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all text-sm"
+                  placeholder="City, State/Country"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Common fields -->
+          <div class="space-y-4 border-t border-gray-200 pt-4">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Email Address *</label>
               <input
-                id="password"
-                v-model="form.password"
-                :type="showPassword ? 'text' : 'password'"
+                v-model="formData.email"
+                type="email"
                 required
-                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200"
-                placeholder="Enter your password"
+                :class="[
+                  'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all text-sm',
+                  selectedAccountType === 'company' ? 'focus:ring-purple-500' : 'focus:ring-green-500'
+                ]"
+                placeholder="your.email@example.com"
               />
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Password *</label>
+                <input
+                  v-model="formData.password"
+                  type="password"
+                  required
+                  :class="[
+                    'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all text-sm',
+                    selectedAccountType === 'company' ? 'focus:ring-purple-500' : 'focus:ring-green-500'
+                  ]"
+                  placeholder="Create password"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Confirm Password *</label>
+                <input
+                  v-model="formData.confirmPassword"
+                  type="password"
+                  required
+                  :class="[
+                    'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent transition-all text-sm',
+                    selectedAccountType === 'company' ? 'focus:ring-purple-500' : 'focus:ring-green-500'
+                  ]"
+                  placeholder="Confirm password"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Terms and Conditions -->
+          <div class="flex items-start space-x-2 pt-2">
+            <input
+              v-model="formData.agreeToTerms"
+              type="checkbox"
+              required
+              :class="[
+                'mt-1 rounded border-gray-300 focus:ring-2 text-sm',
+                selectedAccountType === 'company' 
+                  ? 'text-purple-600 focus:ring-purple-500' 
+                  : 'text-green-600 focus:ring-green-500'
+              ]"
+            />
+            <label class="text-xs text-gray-700">
+              I agree to the 
+              <a href="#" class="text-blue-600 hover:text-blue-700 font-medium">Terms of Service</a> 
+              and 
+              <a href="#" class="text-blue-600 hover:text-blue-700 font-medium">Privacy Policy</a>
+            </label>
+          </div>
+
+          <!-- Submit Button -->
+          <div class="pt-4">
+            <button
+              type="submit"
+              :disabled="isSubmitting"
+              :class="[
+                'w-full font-semibold py-3 px-4 rounded-xl shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm',
+                selectedAccountType === 'company'
+                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white'
+                  : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white'
+              ]"
+            >
+              <span v-if="!isSubmitting" class="flex items-center justify-center">
+                <UserPlusIcon class="h-4 w-4 mr-2" />
+                Create {{ selectedAccountType === 'company' ? 'Company' : 'Job Seeker' }} Account
+              </span>
+              <span v-else class="flex items-center justify-center">
+                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Creating Account...
+              </span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div
+      v-if="showLoginModal"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+    >
+      <div class="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-hidden">
+        <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
+          <div class="flex items-center justify-between text-white">
+            <div class="flex items-center">
+              <LogInIcon class="h-6 w-6 mr-3" />
+              <h2 class="text-xl font-bold">Sign In</h2>
+            </div>
+            <button
+              @click="showLoginModal = false"
+              class="text-white hover:text-gray-200 transition-colors"
+            >
+              <XIcon class="h-6 w-6" />
+            </button>
+          </div>
+        </div>
+
+        <form @submit.prevent="handleLogin" class="p-6 space-y-4">
+          <!-- Account Type Selection -->
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Account Type</label>
+            <div class="grid grid-cols-2 gap-2">
               <button
                 type="button"
-                @click="showPassword = !showPassword"
-                class="absolute right-3 top-3.5 text-gray-400 hover:text-gray-600"
+                @click="loginAccountType = 'company'"
+                :class="[
+                  'flex items-center justify-center px-3 py-2 rounded-lg border-2 transition-all font-medium text-sm',
+                  loginAccountType === 'company'
+                    ? 'border-purple-500 bg-purple-50 text-purple-700'
+                    : 'border-gray-200 bg-white text-gray-600 hover:border-purple-300'
+                ]"
               >
-                <EyeIcon v-if="!showPassword" class="h-5 w-5" />
-                <EyeOffIcon v-else class="h-5 w-5" />
+                <BuildingIcon class="h-4 w-4 mr-1" />
+                Company
+              </button>
+              <button
+                type="button"
+                @click="loginAccountType = 'jobseeker'"
+                :class="[
+                  'flex items-center justify-center px-3 py-2 rounded-lg border-2 transition-all font-medium text-sm',
+                  loginAccountType === 'jobseeker'
+                    ? 'border-green-500 bg-green-50 text-green-700'
+                    : 'border-gray-200 bg-white text-gray-600 hover:border-green-300'
+                ]"
+              >
+                <UserIcon class="h-4 w-4 mr-1" />
+                Job Seeker
               </button>
             </div>
           </div>
 
-          <div class="flex items-center justify-between">
-            <div class="flex items-center">
-              <input
-                id="remember"
-                v-model="form.remember"
-                type="checkbox"
-                class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-              />
-              <label for="remember" class="ml-2 block text-sm text-gray-700">
-                Remember me
-              </label>
-            </div>
-            <a href="#" class="text-sm text-indigo-600 hover:text-indigo-500">
-              Forgot password?
-            </a>
+          <!-- Error Message -->
+          <div
+            v-if="loginError"
+            class="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start text-sm"
+          >
+            <AlertCircleIcon class="h-4 w-4 text-red-600 mr-2 mt-0.5 flex-shrink-0" />
+            <p class="text-red-800">{{ loginError }}</p>
           </div>
 
-          <button
-            type="submit"
-            :disabled="isLoading"
-            class="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <span v-if="!isLoading">Sign In</span>
-            <span v-else class="flex items-center justify-center">
-              <LoaderIcon class="animate-spin h-5 w-5 mr-2" />
-              Signing in...
-            </span>
-          </button>
+          <!-- Email Field -->
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-1">Email Address</label>
+            <input
+              v-model="loginData.email"
+              type="email"
+              required
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
+              placeholder="your.email@example.com"
+            />
+          </div>
+
+          <!-- Password Field -->
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-1">Password</label>
+            <input
+              v-model="loginData.password"
+              type="password"
+              required
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
+              placeholder="Enter your password"
+            />
+          </div>
+
+          <!-- Demo Account Info -->
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <p class="text-xs text-blue-800 font-medium mb-1">Demo Accounts:</p>
+            <p class="text-xs text-blue-700">Company: company@demo.com / demo123</p>
+            <p class="text-xs text-blue-700">Job Seeker: jobseeker@demo.com / demo123</p>
+          </div>
+
+          <!-- Sign In Button -->
+          <div class="pt-2">
+            <button
+              type="submit"
+              :disabled="isLoggingIn || !loginAccountType"
+              class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-2 px-4 rounded-lg shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+            >
+              <span v-if="!isLoggingIn" class="flex items-center justify-center">
+                <LogInIcon class="h-4 w-4 mr-2" />
+                Sign In
+              </span>
+              <span v-else class="flex items-center justify-center">
+                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Signing In...
+              </span>
+            </button>
+          </div>
         </form>
-
-        <div class="mt-6 text-center">
-          <p class="text-sm text-gray-600">
-            Need help? 
-            <a href="#" class="text-indigo-600 hover:text-indigo-500 font-medium">Contact IT Support</a>
-          </p>
-        </div>
       </div>
+    </div>
 
-      <div class="text-center text-sm text-gray-500">
-        <p>© 2025 Talent Acquisition System. All rights reserved.</p>
+    <!-- Success Modal -->
+    <div
+      v-if="showSuccess"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+    >
+      <div class="bg-white rounded-2xl p-8 max-w-md mx-4 text-center">
+        <div class="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <CheckCircleIcon class="h-8 w-8 text-green-600" />
+        </div>
+        <h3 class="text-xl font-bold text-gray-900 mb-2">
+          {{ isLogin ? 'Welcome Back!' : 'Welcome to TalentFlow AI!' }}
+        </h3>
+        <p class="text-gray-600 mb-6">
+          {{ isLogin 
+            ? `Successfully signed in to your ${loginAccountType} account.`
+            : `Your ${selectedAccountType} account has been created successfully.`
+          }}
+        </p>
+        <button
+          @click="redirectToDashboard"
+          class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-2 px-6 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all"
+        >
+          Get Started
+        </button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
-import { UserIcon, MailIcon, EyeIcon, EyeOffIcon, LoaderIcon } from 'lucide-vue-next'
+import { ref } from 'vue'
+import {
+  UserPlusIcon,
+  BuildingIcon,
+  UserIcon,
+  CheckCircleIcon,
+  XIcon,
+  LogInIcon,
+  AlertCircleIcon,
+  SparklesIcon,
+  ZapIcon,
+  TargetIcon,
+  BarChartIcon,
+  FileTextIcon,
+  SearchIcon,
+  TrendingUpIcon,
+  BrainIcon,
+  ClockIcon,
+  ShieldIcon,
+  UsersIcon
+} from 'lucide-vue-next'
 
-const router = useRouter()
-const showPassword = ref(false)
-const isLoading = ref(false)
+const selectedAccountType = ref(null)
+const showLoginModal = ref(false)
+const isSubmitting = ref(false)
+const isLoggingIn = ref(false)
+const showSuccess = ref(false)
+const isLogin = ref(false)
+const loginError = ref('')
+const loginAccountType = ref('company')
 
-const form = reactive({
+const formData = ref({
   email: '',
   password: '',
-  remember: false
+  confirmPassword: '',
+  agreeToTerms: false,
+  companyName: '',
+  industry: '',
+  companySize: '',
+  website: '',
+  firstName: '',
+  lastName: '',
+  phone: '',
+  location: ''
 })
 
-const handleLogin = async () => {
-  isLoading.value = true
-  
-  // Simulate API call
+const loginData = ref({
+  email: '',
+  password: ''
+})
+
+const demoAccounts = {
+  company: { email: 'company@demo.com', password: 'demo123' },
+  jobseeker: { email: 'jobseeker@demo.com', password: 'demo123' }
+}
+
+const selectAccountType = (type) => {
+  selectedAccountType.value = type
+  formData.value = {
+    email: '',
+    password: '',
+    confirmPassword: '',
+    agreeToTerms: false,
+    companyName: '',
+    industry: '',
+    companySize: '',
+    website: '',
+    firstName: '',
+    lastName: '',
+    phone: '',
+    location: ''
+  }
+}
+
+const handleSignUp = async () => {
+  if (formData.value.password !== formData.value.confirmPassword) {
+    alert('Passwords do not match!')
+    return
+  }
+
+  isSubmitting.value = true
   await new Promise(resolve => setTimeout(resolve, 2000))
   
-  console.log('Login attempt:', form)
-  router.push('/dashboard')
+  const userData = {
+    accountType: selectedAccountType.value,
+    ...formData.value
+  }
+  localStorage.setItem('userData', JSON.stringify(userData))
+  
+  isSubmitting.value = false
+  selectedAccountType.value = null
+  isLogin.value = false
+  showSuccess.value = true
+}
 
-  isLoading.value = false
+const handleLogin = async () => {
+  loginError.value = ''
+  isLoggingIn.value = true
+  
+  await new Promise(resolve => setTimeout(resolve, 1500))
+  
+  const demoAccount = demoAccounts[loginAccountType.value]
+  if (loginData.value.email === demoAccount.email && loginData.value.password === demoAccount.password) {
+    const userData = {
+      accountType: loginAccountType.value,
+      email: loginData.value.email,
+      loginTime: new Date().toISOString()
+    }
+    localStorage.setItem('currentUser', JSON.stringify(userData))
+    
+    isLoggingIn.value = false
+    showLoginModal.value = false
+    isLogin.value = true
+    showSuccess.value = true
+  } else {
+    isLoggingIn.value = false
+    loginError.value = 'Invalid credentials. Use demo accounts shown above.'
+  }
+}
+
+const redirectToDashboard = () => {
+  showSuccess.value = false
+  const accountType = isLogin.value ? loginAccountType.value : selectedAccountType.value
+  if (accountType === 'company') {
+    window.location.href = '/dashboard'
+  } else {
+    window.location.href = '/application-form'
+  }
 }
 </script>
+
+<style scoped>
+input:focus, textarea:focus, select:focus {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+</style>
