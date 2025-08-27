@@ -768,6 +768,7 @@ const handleLogin = async () => {
       loginTime: new Date().toISOString()
     }
     localStorage.setItem('currentUser', JSON.stringify(userData))
+    localStorage.setItem("role", loginAccountType.value)
     
     isLoggingIn.value = false
     showLoginModal.value = false
@@ -783,9 +784,9 @@ const redirectToDashboard = () => {
   showSuccess.value = false
   const accountType = isLogin.value ? loginAccountType.value : selectedAccountType.value
   if (accountType === 'company') {
-    window.location.href = '/dashboard'
+    window.location.href = '/hrhome'
   } else {
-    window.location.href = '/application-form'
+    window.location.href = '/jshome'
   }
 }
 </script>
