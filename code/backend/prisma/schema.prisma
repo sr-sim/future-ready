@@ -1,0 +1,401 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model fsdfs {
+  id        Int      @id @default(autoincrement())
+  fullName  String
+  email     String   @unique
+  phone     String?
+  createdAt DateTime @default(now())
+}
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  password          String    // Hashed password
+  accountType       AccountType
+  emailVerified     Boolean   @default(false)
+  emailVerifiedAt   DateTime?
+  isActive          Boolean   @default(true)
+  lastLoginAt       DateTime?
+  loginAttempts     Int       @default(0)
+  lockedUntil       DateTime?
+  
+  // Social Login
+  googleId          String?   @unique
+  linkedinId        String?   @unique
+  
+  // Password Reset
+  resetToken        String?   @unique
+  resetTokenExpiry  DateTime?
+  
+  // Timestamps
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Relations
+  companyProfile    CompanyProfile?
+  jobSeekerProfile  JobSeekerProfile?
+  sessions          Session[]
+  loginHistory      LoginHistory[]
+  
+  @@map("users")
+}
+
+// Session Management
+model Session {
+  id          String   @id @default(cuid())
+  userId      String
+  token       String   @unique
+  expiresAt   DateTime
+  ipAddress   String?
+  userAgent   String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("sessions")
+}
+
+// Login History for Security
+model LoginHistory {
+  id          String   @id @default(cuid())
+  userId      String
+  ipAddress   String?
+  userAgent   String?
+  success     Boolean
+  failureReason String?
+  loginAt     DateTime @default(now())
+  
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("login_history")
+}
+
+// Company Profile Information
+model CompanyProfile {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  companyName       String
+  industry          Industry
+  companySize       CompanySize
+  website           String?
+  companyDescription String?
+  
+  // Contact Information
+  contactEmail      String?
+  contactPhone      String?
+  address           String?
+  city              String?
+  state             String?
+  country           String?
+  postalCode        String?
+  
+  // Company Details
+  foundedYear       Int?
+  employeeCount     Int?
+  companyType       CompanyType?
+  logo              String?   // URL to company logo
+  
+  // Subscription & Features
+  subscriptionPlan  SubscriptionPlan @default(FREE)
+  subscriptionExpiry DateTime?
+  featuresEnabled   Json?     // JSON object for enabled features
+  
+  // Settings
+  autoScreening     Boolean  @default(true)
+  emailNotifications Boolean @default(true)
+  smsNotifications  Boolean  @default(false)
+  
+  // Timestamps
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobPostings       JobPosting[]
+  applications      Application[]
+  
+  @@map("company_profiles")
+}
+
+// Job Seeker Profile Information
+model JobSeekerProfile {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  firstName         String
+  lastName          String
+  phone             String
+  location          String
+  professionalTitle String?
+  
+  // Professional Information
+  summary           String?
+  skills            String?  // Comma-separated or JSON
+  experience        Json?    // JSON array of work experiences
+  education         Json?    // JSON array of education
+  
+  // Personal Details
+  dateOfBirth       DateTime?
+  gender            Gender?
+  nationality       String?
+  profilePicture    String?  // URL to profile picture
+  
+  // Resume Information
+  resumeUrl         String?  // URL to uploaded resume
+  resumeFileName    String?
+  resumeUploadedAt  DateTime?
+  
+  // Job Preferences
+  desiredSalaryMin  Int?
+  desiredSalaryMax  Int?
+  preferredLocations String? // JSON array or comma-separated
+  jobTypes          String? // JSON array: full-time, part-time, contract, etc.
+  remotePreference  RemotePreference?
+  availabilityDate  DateTime?
+  
+  // Privacy Settings
+  profileVisibility ProfileVisibility @default(PUBLIC)
+  allowRecruiterContact Boolean @default(true)
+  
+  // Notifications
+  emailNotifications Boolean @default(true)
+  smsNotifications  Boolean @default(false)
+  jobAlerts         Boolean @default(true)
+  
+  // Timestamps
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  applications      Application[]
+  jobMatches        JobMatch[]
+  
+  @@map("job_seeker_profiles")
+}
+
+// Job Postings by Companies
+model JobPosting {
+  id                String   @id @default(cuid())
+  companyId         String
+  title             String
+  description       String
+  requirements      String?
+  responsibilities  String?
+  
+  // Job Details
+  jobType           JobType
+  experienceLevel   ExperienceLevel
+  salaryMin         Int?
+  salaryMax         Int?
+  currency          String   @default("USD")
+  location          String
+  isRemote          Boolean  @default(false)
+  
+  // Application Settings
+  applicationDeadline DateTime?
+  maxApplications   Int?
+  autoScreening     Boolean  @default(true)
+  
+  // Status
+  status            JobStatus @default(DRAFT)
+  publishedAt       DateTime?
+  closedAt          DateTime?
+  
+  // SEO and Metadata
+  slug              String?  @unique
+  tags              String?  // JSON array or comma-separated
+  
+  // Timestamps
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  company           CompanyProfile @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  applications      Application[]
+  jobMatches        JobMatch[]
+  
+  @@map("job_postings")
+}
+
+// Job Applications
+model Application {
+  id                String   @id @default(cuid())
+  jobPostingId      String
+  jobSeekerId       String
+  companyId         String
+  
+  // Application Data
+  coverLetter       String?
+  resumeUrl         String?
+  customAnswers     Json?    // JSON object for custom application questions
+  
+  // AI Analysis
+  matchScore        Float?   // AI-calculated match score (0-100)
+  skillsMatch       Json?    // JSON object with matched skills
+  aiSummary         String?  // AI-generated summary of candidate
+  
+  // Status Tracking
+  status            ApplicationStatus @default(SUBMITTED)
+  statusUpdatedAt   DateTime @default(now())
+  statusUpdatedBy   String?  // User ID who updated status
+  
+  // Interview Process
+  interviewScheduled DateTime?
+  interviewNotes    String?
+  
+  // Timestamps
+  appliedAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  jobPosting        JobPosting @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
+  jobSeeker         JobSeekerProfile @relation(fields: [jobSeekerId], references: [id], onDelete: Cascade)
+  company           CompanyProfile @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  @@unique([jobPostingId, jobSeekerId]) // Prevent duplicate applications
+  @@map("applications")
+}
+
+// AI-Generated Job Matches
+model JobMatch {
+  id              String   @id @default(cuid())
+  jobPostingId    String
+  jobSeekerId     String
+  
+  // Match Details
+  matchScore      Float    // AI-calculated match score (0-100)
+  matchedSkills   Json     // JSON array of matched skills
+  matchReason     String?  // AI explanation of why it's a match
+  
+  // Status
+  viewed          Boolean  @default(false)
+  interested      Boolean?
+  applied         Boolean  @default(false)
+  
+  // Timestamps
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  jobPosting      JobPosting @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
+  jobSeeker       JobSeekerProfile @relation(fields: [jobSeekerId], references: [id], onDelete: Cascade)
+  
+  @@unique([jobPostingId, jobSeekerId])
+  @@map("job_matches")
+}
+
+// Enums
+enum AccountType {
+  COMPANY
+  JOBSEEKER
+}
+
+enum Industry {
+  TECHNOLOGY
+  HEALTHCARE
+  FINANCE
+  EDUCATION
+  RETAIL
+  MANUFACTURING
+  CONSULTING
+  MARKETING
+  CONSTRUCTION
+  OTHER
+}
+
+enum CompanySize {
+  STARTUP_1_10
+  SMALL_11_50
+  MEDIUM_51_200
+  LARGE_201_1000
+  ENTERPRISE_1000_PLUS
+}
+
+enum CompanyType {
+  STARTUP
+  PRIVATE
+  PUBLIC
+  NON_PROFIT
+  GOVERNMENT
+}
+
+enum SubscriptionPlan {
+  FREE
+  BASIC
+  PREMIUM
+  ENTERPRISE
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum RemotePreference {
+  REMOTE_ONLY
+  HYBRID
+  ON_SITE
+  NO_PREFERENCE
+}
+
+enum ProfileVisibility {
+  PUBLIC
+  PRIVATE
+  RECRUITER_ONLY
+}
+
+enum JobType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  TEMPORARY
+  INTERNSHIP
+  FREELANCE
+}
+
+enum ExperienceLevel {
+  ENTRY_LEVEL
+  MID_LEVEL
+  SENIOR_LEVEL
+  EXECUTIVE
+  INTERNSHIP
+}
+
+enum JobStatus {
+  DRAFT
+  PUBLISHED
+  PAUSED
+  CLOSED
+  EXPIRED
+}
+
+enum ApplicationStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  SHORTLISTED
+  INTERVIEW_SCHEDULED
+  INTERVIEWED
+  OFFER_EXTENDED
+  HIRED
+  REJECTED
+  WITHDRAWN
+}

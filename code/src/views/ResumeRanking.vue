@@ -6,7 +6,7 @@
         <div class="flex justify-between items-center h-16">
           <div class="flex items-center">
             <div class="h-10 w-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center mr-3">
-              <StarIcon class="h-6 w-6 text-white" />
+              <TrendingUpIcon class="h-6 w-6 text-white" />
             </div>
             <div>
               <h1 class="text-xl font-bold text-gray-900">Resume Analysis Result</h1>
@@ -163,8 +163,6 @@
                 <div class="text-xs text-gray-600">Keywords</div>
               </div>
             </div>
-
-             Actions 
             <div class="flex justify-between items-center pt-4 border-t">
               <div class="flex space-x-2">
                 <button class="flex items-center px-3 py-2 text-sm bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition duration-200">
