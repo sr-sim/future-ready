@@ -60,13 +60,26 @@
         </div>
       </div>
 
+      <!-- Filter Bar -->
+      <div class="mb-6 flex gap-3">
+        <button
+          v-for="filter in FILTERS"
+          :key="filter.value"
+          @click="selectedFilter = filter.value"
+          :class="selectedFilter === filter.value ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'"
+          class="px-4 py-2 rounded-lg font-medium text-sm transition-colors"
+        >
+          {{ filter.label }}
+        </button>
+      </div>
+
       <!-- Candidate List -->
-      <div v-if="shortlistedCandidates.length > 0" class="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-6">
+      <div v-if="filteredCandidates.length > 0" class="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-6">
         <div
-         v-for="candidate in shortlistedCandidates"
+          v-for="candidate in filteredCandidates"
           :key="candidate.id"
           class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden transition-all duration-200"
-          :class="{ 'opacity-70 border-green-300 bg-green-50': candidate.sentEmail, 'hover:shadow-2xl': !candidate.sentEmail }"
+          :class="{ 'hover:shadow-2xl': true }"
         >
           <div class="p-6">
             <div class="flex items-start justify-between mb-4">
@@ -123,6 +136,7 @@
             <!-- Actions -->
             <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
               <button
+                v-if="candidate.status === 'shortlisted'"
                 @click="openEmailModal(candidate)"
                 :disabled="candidate.sentEmail"
                 :class="candidate.sentEmail ? 'bg-green-100 text-green-700 hover:bg-green-200 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700 shadow-md'"
@@ -136,6 +150,22 @@
                   <MailIcon class="h-4 w-4 mr-2" />
                   Email for Interview
                 </span>
+              </button>
+              <button
+                v-if="candidate.status === 'emailSent'"
+                @click="openResultModal(candidate, 'approve')"
+                class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+              >
+                <CheckIcon class="h-4 w-4 mr-2" />
+                Approve
+              </button>
+              <button
+                v-if="candidate.status === 'emailSent'"
+                @click="openResultModal(candidate, 'reject')"
+                class="flex items-center px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium"
+              >
+                <XIcon class="h-4 w-4 mr-2" />
+                Reject
               </button>
               <button
                 @click="viewResume(candidate.id)"
@@ -223,6 +253,70 @@
         </form>
       </div>
     </div>
+
+    <!-- Result Email Modal -->
+    <div v-if="showResultModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8 relative">
+        <button @click="closeResultModal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+          <XIcon class="h-6 w-6" />
+        </button>
+        <h2 class="text-2xl font-bold text-gray-900 mb-6">
+          {{ resultForm.action === 'approve' ? 'Approve Candidate' : 'Reject Candidate' }}
+        </h2>
+        <form @submit.prevent="sendResultEmail" class="space-y-5">
+          <div>
+            <label for="result-to" class="block text-sm font-semibold text-gray-700 mb-2">To</label>
+            <input
+              id="result-to"
+              type="text"
+              v-model="resultForm.to"
+              readonly
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 text-sm"
+            />
+          </div>
+          <div>
+            <label for="result-subject" class="block text-sm font-semibold text-gray-700 mb-2">Subject</label>
+            <input
+              id="result-subject"
+              type="text"
+              v-model="resultForm.subject"
+              required
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            />
+          </div>
+          <div>
+            <label for="result-body" class="block text-sm font-semibold text-gray-700 mb-2">Message</label>
+            <textarea
+              id="result-body"
+              v-model="resultForm.body"
+              rows="8"
+              required
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y text-sm"
+            ></textarea>
+          </div>
+          <div class="flex justify-end gap-3">
+            <button
+              type="button"
+              @click="closeResultModal"
+              class="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium text-sm"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              :disabled="isSendingEmail"
+              class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium text-sm shadow-md"
+            >
+              <span v-if="!isSendingEmail">Send Email</span>
+              <span v-else class="flex items-center justify-center">
+                <LoaderIcon class="animate-spin h-5 w-5 mr-2" />
+                Sending...
+              </span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -243,6 +337,16 @@ import {
   ArrowLeftIcon
 } from 'lucide-vue-next'
 
+const FILTERS = [
+  { label: 'Email Not Sent', value: 'shortlisted' },
+  { label: 'Email Sent', value: 'emailSent' },
+  { label: 'Rejected', value: 'rejected' },
+  { label: 'Approved (Onboarding)', value: 'approved' }
+]
+
+const selectedFilter = ref('shortlisted')
+
+// Add status property to candidates
 const shortlistedCandidates = ref([
   {
     id: 'c1',
@@ -253,7 +357,8 @@ const shortlistedCandidates = ref([
     matchScore: 92,
     matchedSkills: ['React', 'TypeScript', 'Node.js', 'GraphQL', 'AWS'],
     shortlistedDate: 'Aug 5, 2025',
-    sentEmail: false // New property
+    sentEmail: false,
+    status: 'shortlisted'
   },
   {
     id: 'c2',
@@ -264,7 +369,8 @@ const shortlistedCandidates = ref([
     matchScore: 87,
     matchedSkills: ['Vue.js', 'JavaScript', 'CSS', 'REST APIs'],
     shortlistedDate: 'Aug 5, 2025',
-    sentEmail: true // New property
+    sentEmail: true,
+    status: 'emailSent'
   },
   {
     id: 'c3',
@@ -275,7 +381,8 @@ const shortlistedCandidates = ref([
     matchScore: 78,
     matchedSkills: ['JavaScript', 'Python', 'React', 'MongoDB'],
     shortlistedDate: 'Aug 6, 2025',
-    sentEmail: false // New property
+    sentEmail: false,
+    status: 'shortlisted'
   },
   {
     id: 'c4',
@@ -286,7 +393,56 @@ const shortlistedCandidates = ref([
     matchScore: 65,
     matchedSkills: ['HTML', 'CSS', 'JavaScript', 'Figma'],
     shortlistedDate: 'Aug 6, 2025',
-    sentEmail: true // New property
+    sentEmail: true,
+    status: 'emailSent'
+  },
+  {
+    id: 'c5',
+    name: 'Priya Singh',
+    email: 'priya.singh@example.com',
+    title: 'Backend Engineer',
+    experience: 7,
+    matchScore: 85,
+    matchedSkills: ['Node.js', 'Express', 'MongoDB', 'Docker'],
+    shortlistedDate: 'Aug 7, 2025',
+    sentEmail: true,
+    status: 'approved'
+  },
+  {
+    id: 'c6',
+    name: 'John Doe',
+    email: 'john.doe@example.com',
+    title: 'DevOps Specialist',
+    experience: 8,
+    matchScore: 90,
+    matchedSkills: ['AWS', 'Terraform', 'CI/CD', 'Kubernetes'],
+    shortlistedDate: 'Aug 7, 2025',
+    sentEmail: true,
+    status: 'rejected'
+  },
+  {
+    id: 'c7',
+    name: 'Linda Park',
+    email: 'linda.park@example.com',
+    title: 'QA Engineer',
+    experience: 5,
+    matchScore: 70,
+    matchedSkills: ['Selenium', 'Cypress', 'Jest', 'Postman'],
+    shortlistedDate: 'Aug 8, 2025',
+    sentEmail: false,
+    status: 'shortlisted'
+  },
+  {
+    id: 'c8',
+    name: 'Carlos Mendez',
+    email: 'carlos.mendez@example.com',
+    title: 'Mobile App Developer',
+    experience: 4,
+    matchScore: 80,
+    matchedSkills: ['Flutter', 'Dart', 'Firebase', 'REST APIs'],
+    shortlistedDate: 'Aug 8, 2025',
+    sentEmail: true,
+    status: 'emailSent'
   }
 ])
 
@@ -401,8 +557,53 @@ const removeSelected = () => {
     alert('Selected candidates removed from shortlist.')
   }
 }
-const visibleCandidates = computed(() => {
-  return shortlistedCandidates.value.filter(c => !c.sentEmail)
-})
 
+const filteredCandidates = computed(() =>
+  shortlistedCandidates.value.filter(c => c.status === selectedFilter.value)
+)
+
+// Result Email Modal
+const showResultModal = ref(false)
+const resultForm = reactive({
+  to: '',
+  subject: '',
+  body: '',
+  action: '' // 'approve' or 'reject'
+})
+const currentResultTargetId = ref(null)
+
+const openResultModal = (candidate, action) => {
+  currentResultTargetId.value = candidate.id
+  resultForm.to = candidate.email
+  resultForm.action = action
+  resultForm.subject = action === 'approve'
+    ? `Congratulations! You're Approved for Onboarding`
+    : `Interview Result: Application Rejected`
+  resultForm.body = action === 'approve'
+    ? `Dear ${candidate.name},\n\nCongratulations! You have been approved for onboarding as ${candidate.title} at [Company Name].\n\n[AI-generated message or custom reason here]\n\nBest regards,\n[Your Name]\n[Your Title]`
+    : `Dear ${candidate.name},\n\nThank you for interviewing for the ${candidate.title} position at [Company Name]. Unfortunately, we will not be moving forward with your application.\n\n[Reason or AI-generated feedback here]\n\nBest regards,\n[Your Name]\n[Your Title]`
+  showResultModal.value = true
+}
+
+const closeResultModal = () => {
+  showResultModal.value = false
+  currentResultTargetId.value = null
+  resultForm.to = ''
+  resultForm.subject = ''
+  resultForm.body = ''
+  resultForm.action = ''
+}
+
+const sendResultEmail = async () => {
+  isSendingEmail.value = true
+  await new Promise(resolve => setTimeout(resolve, 2000))
+  alert('Result email sent!')
+  // Update candidate status
+  const candidate = shortlistedCandidates.value.find(c => c.id === currentResultTargetId.value)
+  if (candidate) {
+    candidate.status = resultForm.action === 'approve' ? 'approved' : 'rejected'
+  }
+  isSendingEmail.value = false
+  closeResultModal()
+}
 </script>
