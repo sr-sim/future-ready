@@ -20,7 +20,7 @@ const menus = {
   company: [
     { name: "Home", to: "/hrhome", icon: HomeIcon },
     { name: "Post a Job", to: "/upload", icon: UploadCloudIcon },
-    { name: "AI matching", to: "/upload", icon: UploadCloudIcon },
+    { name: "AI matching", to: "/ranking", icon: UploadCloudIcon },
     { name: "Shortlist", to: "/shortlist", icon: StarIcon },
   ]
 }
