@@ -9,7 +9,7 @@
               <UserPlusIcon class="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 class="text-xl font-bold text-gray-900">TalentFlow AI</h1>
+              <h1 class="text-xl font-bold text-gray-900">KLMMS</h1>
               <p class="text-sm text-gray-500">Intelligent Talent Acquisition Platform</p>
             </div>
           </div>
@@ -29,12 +29,8 @@
     <div class="max-w-6xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
       <!-- Get Started Section -->
       <div class="text-center mb-12">
-        <div class="inline-flex items-center bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full px-6 py-2 mb-6">
-          <SparklesIcon class="h-5 w-5 text-white mr-2" />
-          <span class="text-white font-semibold">AI-Powered Talent Acquisition</span>
-        </div>
-        <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-          Join <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">TalentFlow AI</span>
+        <h2 class="text-4xl md:text-4xl font-bold text-gray-900 mb-6">
+          Join <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">KLMMS</span>
         </h2>
         <p class="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
           Choose your account type to get started with our intelligent talent acquisition platform
@@ -137,7 +133,7 @@
           <div class="bg-gradient-to-r from-indigo-600 to-blue-600 px-6 py-4">
             <div class="flex items-center text-white">
               <SparklesIcon class="h-6 w-6 mr-3" />
-              <h3 class="text-xl font-bold">About TalentFlow AI</h3>
+              <h3 class="text-xl font-bold">About KLMMS</h3>
             </div>
           </div>
           <div class="p-8">
@@ -146,7 +142,7 @@
                 Revolutionize Your <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Hiring Process</span>
               </h4>
               <p class="text-lg text-gray-600 max-w-3xl mx-auto">
-                TalentFlow AI is an intelligent talent acquisition automation platform that streamlines recruitment 
+                KLMMS is an intelligent talent acquisition automation platform that streamlines recruitment 
                 for companies and empowers job seekers to find their perfect career match using cutting-edge AI technology.
               </p>
             </div>
@@ -224,7 +220,7 @@
         <!-- Key Features Section -->
         <div class="bg-gradient-to-r from-gray-900 to-blue-900 rounded-2xl shadow-xl text-white p-8">
           <div class="text-center mb-8">
-            <h3 class="text-2xl font-bold mb-2">Why Choose TalentFlow AI?</h3>
+            <h3 class="text-2xl font-bold mb-2">Why Choose KLMMS?</h3>
             <p class="text-blue-200">Join thousands who have transformed their hiring experience</p>
           </div>
           <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -368,6 +364,17 @@
                   placeholder="https://company.com"
                 />
               </div>
+            </div>
+            <!-- Company Address Field -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Company Address *</label>
+              <input
+                v-model="formData.companyAddress"
+                type="text"
+                required
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
+                placeholder="Enter company address"
+              />
             </div>
           </div>
 
@@ -639,7 +646,7 @@
           <CheckCircleIcon class="h-8 w-8 text-green-600" />
         </div>
         <h3 class="text-xl font-bold text-gray-900 mb-2">
-          {{ isLogin ? 'Welcome Back!' : 'Welcome to TalentFlow AI!' }}
+          {{ isLogin ? 'Welcome Back!' : 'Welcome to KLMMS!' }}
         </h3>
         <p class="text-gray-600 mb-6">
           {{ isLogin 
@@ -699,6 +706,7 @@ const formData = ref({
   industry: '',
   companySize: '',
   website: '',
+  companyAddress: '', // <-- add this line
   firstName: '',
   lastName: '',
   phone: '',

@@ -18,9 +18,6 @@
               <div class="h-2 w-2 bg-green-500 rounded-full"></div>
               <span class="text-sm text-gray-700">HR Manager</span>
             </div>
-            <button class="text-gray-400 hover:text-gray-600 transition-colors">
-              <LogOutIcon class="h-5 w-5" />
-            </button>
           </div>
         </div>
       </div>

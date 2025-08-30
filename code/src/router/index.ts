@@ -11,6 +11,7 @@ import jshome from '../views/Jobseeker-HomePage.vue'
 import jobmatch from '../views/Jobseeker-JobMatching.vue'
 import matchedresult from '../views/Jobseeker-MatchedResult.vue'
 import oboardingDashboard from '../views/Jobseeker-Onboarding.vue'
+import material from '../views/HR-material.vue'
 
 const routes = [
   { path: '/', name: 'Login', component: Login },
@@ -23,6 +24,7 @@ const routes = [
   { path: '/jobmatch', name: 'JobMatching', component: jobmatch },
   { path: '/matchedresult', name: 'MatchedResult', component: matchedresult },
   { path: '/onboarding', name: 'Onboarding', component: oboardingDashboard },
+  { path: '/material', name: 'Material', component: material },
 ]
 const router = createRouter({
   history: createWebHistory(),

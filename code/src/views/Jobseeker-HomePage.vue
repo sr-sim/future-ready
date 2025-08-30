@@ -18,14 +18,15 @@
               <BellIcon class="h-6 w-6" />
               <span class="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center text-xs text-white">3</span>
             </button>
+                      <!-- User Profile -->
+          <div class="flex items-center space-x-4">
             <div class="flex items-center space-x-2">
-              <div class="h-8 w-8 bg-gradient-to-r from-green-600 to-emerald-600 rounded-full flex items-center justify-center">
+              <div class="h-8 w-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center">
                 <span class="text-white text-sm font-semibold">{{ userInitials }}</span>
               </div>
-              <button class="text-gray-600 hover:text-gray-900 transition-colors">
-                <ChevronDownIcon class="h-4 w-4" />
-              </button>
+              <span class="text-gray-700 font-medium">{{ userName }}</span>
             </div>
+          </div>
           </div>
         </div>
       </div>
