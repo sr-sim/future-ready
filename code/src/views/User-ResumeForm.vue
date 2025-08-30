@@ -656,6 +656,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
+import { supabase } from '../lib/supabase'
 import {
   UserPlusIcon,
   UserIcon,
@@ -889,24 +890,91 @@ const saveResume = async () => {
   
   isSaving.value = true
   
-  // Simulate API call to save resume
-  await new Promise(resolve => setTimeout(resolve, 1000))
-  
-  // Save to localStorage for demo purposes
-  localStorage.setItem('savedResume', JSON.stringify(formData.value))
-  
-  isSaving.value = false
-  showSaveSuccess.value = true
-  
-  // Don't auto-hide the modal - let user choose action
+  try {
+    // Get current user from localStorage (from login)
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+    
+    // For demo purposes, we'll save without user_id
+    // In a real app, you'd have proper user authentication
+    // Prepare data for Supabase
+    const resumeData = {
+      // user_id will be NULL for demo purposes
+      first_name: formData.value.personalInfo.fullName.split(' ')[0] || '',
+      last_name: formData.value.personalInfo.fullName.split(' ').slice(1).join(' ') || '',
+      phone: formData.value.personalInfo.phone,
+      location: formData.value.personalInfo.location,
+      professional_title: formData.value.experience[0]?.title || '',
+      summary: formData.value.summary,
+      skills: formData.value.skills.split(',').map(skill => skill.trim()).filter(Boolean),
+      experience: formData.value.experience,
+      education: formData.value.education,
+      profile_visibility: 'PUBLIC'
+    }
+    
+    // Save to Supabase
+    const { data, error } = await supabase
+      .from('job_seeker_profiles')
+      .upsert([resumeData], { 
+        onConflict: 'user_id',
+        ignoreDuplicates: false 
+      })
+    
+    if (error) {
+      throw error
+    }
+    
+    // Also save to localStorage as backup
+    localStorage.setItem('savedResume', JSON.stringify(formData.value))
+    
+    // Generate embeddings for the saved profile (if data exists)
+    if (data && data.length > 0) {
+      await generateEmbeddings(data[0].id)
+    }
+    
+    isSaving.value = false
+    showSaveSuccess.value = true
+    
+    console.log('Resume saved successfully:', data)
+    
+  } catch (error) {
+    console.error('Error saving resume:', error)
+    isSaving.value = false
+    showValidationAlert(`Error saving resume: ${error.message}`)
+  }
 }
 
-const loadSavedResume = () => {
-  const saved = localStorage.getItem('savedResume')
-  if (saved) {
-    formData.value = JSON.parse(saved)
-  } else {
-    showValidationAlert('No saved resume found. Please fill out the form first.')
+const loadSavedResume = async () => {
+  try {
+    // Get current user from localStorage (from login)
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+    
+    // For demo purposes, we'll just use localStorage since we can't match by user_id
+    // In a real app, you'd have proper user authentication with UUIDs
+    if (!currentUser.email) {
+      // Fallback to localStorage if no user ID
+      const saved = localStorage.getItem('savedResume')
+      if (saved) {
+        formData.value = JSON.parse(saved)
+        return
+      } else {
+        showValidationAlert('No saved resume found. Please fill out the form first.')
+        return
+      }
+    }
+    
+    // For demo purposes, just use localStorage
+    // In a real app, you'd load from Supabase using user authentication
+    const saved = localStorage.getItem('savedResume')
+    if (saved) {
+      formData.value = JSON.parse(saved)
+    } else {
+      showValidationAlert('No saved resume found. Please fill out the form first.')
+    }
+    return
+    
+  } catch (error) {
+    console.error('Error loading resume:', error)
+    showValidationAlert(`Error loading resume: ${error.message}`)
   }
 }
 
@@ -987,6 +1055,28 @@ const addEducation = () => {
 
 const removeEducation = (index) => {
   formData.value.education.splice(index, 1)
+}
+
+// Function to generate embeddings for the profile
+const generateEmbeddings = async (profileId) => {
+  if (!profileId) return
+  
+  try {
+    // Call the backend script to generate embeddings
+    // This would typically be done via an API endpoint
+    // For now, we'll just log that embeddings should be generated
+    console.log('Generating embeddings for profile:', profileId)
+    
+    // In a real implementation, you'd call your backend API here
+    // const response = await fetch('/api/generate-embeddings', {
+    //   method: 'POST',
+    //   headers: { 'Content-Type': 'application/json' },
+    //   body: JSON.stringify({ profileId })
+    // })
+    
+  } catch (error) {
+    console.error('Error generating embeddings:', error)
+  }
 }
 </script>
 
