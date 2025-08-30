@@ -16,13 +16,15 @@
             </div>
           </div>
           <div class="flex items-center space-x-4">
-            <button 
-              @click="goBack"
-              class="text-gray-600 hover:text-gray-900 transition-colors flex items-center"
-            >
-              <ArrowLeftIcon class="h-5 w-5 mr-1" />
-              {{ hasCompletedMatching ? 'Back to Matching' : 'Back to Dashboard' }}
-            </button>
+          </div>
+                                <!-- User Profile -->
+          <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-2">
+              <div class="h-8 w-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center">
+                <span class="text-white text-sm font-semibold">{{ userInitials }}</span>
+              </div>
+              <span class="text-gray-700 font-medium">{{ userName }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -452,7 +454,8 @@ const filters = ref({
   companySize: '',
   sortBy: 'score'
 })
-
+const userName = ref('Sarah Johnson')
+const userInitials = computed(() => userName.value.split(' ').map(n => n[0]).join(''))
 // Pagination
 const currentPage = ref(1)
 const itemsPerPage = ref(5)
