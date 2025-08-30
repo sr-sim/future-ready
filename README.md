@@ -1,5 +1,5 @@
 # future-ready
-## Project-title: 
+## Project-title: KLMMS Talent Pool System
 
 ## Team member:
 1. Kelvin Chin Wei Hong
@@ -21,10 +21,10 @@
 - Onboard guideline step by step from Overview (Culture, department), Project/Product, Techstack(skill needed), Job scope based on role
 
 ## Technology Stack Used
-•	Frontend: Vue.js (with composition API and lucide-vue-next icons), Tailwind CSS for styling.
-•	Backend/Server Scripts: Node.js, using Supabase as a backend database.
-•	AI Model: Uses the @xenova/transformers library to run a transformer-based embedding model (Xenova/bge-small-en-v1.5) for feature extraction and semantic matching.
-•	Database: Supabase (PostgreSQL) is used to store job postings, applicant profiles, and their embeddings.
+- Frontend: Vue.js (with composition API and lucide-vue-next icons), Tailwind CSS for styling.
+-	Backend/Server Scripts: Node.js, using Supabase as a backend database.
+-	AI Model: Uses the @xenova/transformers library to run a transformer-based embedding model (Xenova/bge-small-en-v1.5) for feature extraction and semantic matching.
+-	Database: Supabase (PostgreSQL) is used to store job postings, applicant profiles, and their embeddings.
 
 ## Setup Instructions
 1. Clone Github repos 
@@ -33,6 +33,7 @@
 > npm install @supabase/supabase-js
 > npm run dev
 3. Ctrl + click the local link
+
 ![Click Link example](/code/public/Local Link example.png)
 
 ## Reflection on Challenges and Learning
