@@ -31,69 +31,10 @@
     </header>
 
     <!-- No Matching Completed State -->
-    <div v-if="!hasCompletedMatching" class="max-w-4xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
-      <div class="text-center">
-        <!-- Icon -->
-        <div class="h-24 w-24 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-8">
-          <SparklesIcon class="h-12 w-12 text-purple-600" />
-        </div>
-        
-        <!-- Title and Description -->
-        <h2 class="text-3xl font-bold text-gray-900 mb-4">AI Matching Required</h2>
-        <p class="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-          You need to complete the AI matching process first to see your personalized job recommendations and company matches.
-        </p>
-        
-        <!-- Features List -->
-        <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 mb-8 max-w-2xl mx-auto">
-          <h3 class="text-lg font-bold text-gray-900 mb-6">What you'll get after AI matching:</h3>
-          <div class="space-y-4 text-left">
-            <div class="flex items-center">
-              <div class="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center mr-4">
-                <CheckCircleIcon class="h-4 w-4 text-green-600" />
-              </div>
-              <span class="text-gray-700">Personalized job recommendations based on your skills</span>
-            </div>
-            <div class="flex items-center">
-              <div class="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center mr-4">
-                <CheckCircleIcon class="h-4 w-4 text-blue-600" />
-              </div>
-              <span class="text-gray-700">Resume scoring and improvement suggestions</span>
-            </div>
-            <div class="flex items-center">
-              <div class="h-8 w-8 bg-purple-100 rounded-full flex items-center justify-center mr-4">
-                <CheckCircleIcon class="h-4 w-4 text-purple-600" />
-              </div>
-              <span class="text-gray-700">Companies actively looking for your profile</span>
-            </div>
-            <div class="flex items-center">
-              <div class="h-8 w-8 bg-orange-100 rounded-full flex items-center justify-center mr-4">
-                <CheckCircleIcon class="h-4 w-4 text-orange-600" />
-              </div>
-              <span class="text-gray-700">Match scores and compatibility ratings</span>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Action Button -->
-        <button
-          @click="goToMatching"
-          class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-4 px-12 rounded-2xl shadow-xl transition-all duration-200 transform hover:scale-105"
-        >
-          <span class="flex items-center">
-            <SparklesIcon class="h-6 w-6 mr-3" />
-            Start AI Matching
-          </span>
-        </button>
-        
-        <p class="text-gray-500 text-sm mt-4">
-          The AI matching process takes about 1-2 minutes to complete
-        </p>
-      </div>
-    </div>
+
 
     <!-- Existing Results Content (only show if matching completed) -->
-    <div v-else class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <div  class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       <!-- Filters Section -->
       <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden mb-8">
         <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
@@ -113,12 +54,11 @@
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               >
                 <option value="">All Locations</option>
-                <option value="San Francisco, CA">San Francisco, CA</option>
-                <option value="New York, NY">New York, NY</option>
-                <option value="Seattle, WA">Seattle, WA</option>
-                <option value="Austin, TX">Austin, TX</option>
+                <option value="Puchong, Selangor">Puchong, Selangor</option>
+                <option value="Johor Bahru, Johor">Johor Bahru, Johor</option>
+                <option value="Bukit Jalil, Kuala Lumpur">Bukit Jalil, Kuala Lumpur</option>
+                <option value="Damansara, Selangor">Damansara, Selangor</option>
                 <option value="Remote">Remote</option>
-                <option value="Boston, MA">Boston, MA</option>
               </select>
             </div>
 
@@ -473,12 +413,12 @@ const allCompanies = ref([
     id: 1,
     name: 'TechCorp Solutions',
     industry: 'Software Development',
-    location: 'San Francisco, CA',
+    location: 'Puchong, Selangor',
     size: 'Large',
     position: 'Senior Frontend Developer',
     jobType: 'Full-time',
     jobDescription: 'Join our innovative team building next-generation web applications with React, TypeScript, and modern development practices.',
-    salaryRange: '$120k - $150k',
+    salaryRange: 'RM8000 - RM15000',
     postedDate: '2 days ago',
     matchScore: 95,
     matchingSkills: ['React', 'TypeScript', 'JavaScript', 'CSS', 'Node.js', 'Git'],
@@ -488,12 +428,12 @@ const allCompanies = ref([
     id: 2,
     name: 'DataFlow Inc',
     industry: 'Data Analytics',
-    location: 'New York, NY',
+    location: 'Johor Bahru, Johor',
     size: 'Medium',
     position: 'Full Stack Engineer',
     jobType: 'Full-time',
     jobDescription: 'Work on cutting-edge data visualization and analytics platforms using React, Python, and cloud technologies.',
-    salaryRange: '$110k - $140k',
+    salaryRange: 'RM11000 - RM14000',
     postedDate: '1 week ago',
     matchScore: 88,
     matchingSkills: ['Python', 'React', 'SQL', 'AWS', 'JavaScript'],
@@ -503,12 +443,12 @@ const allCompanies = ref([
     id: 3,
     name: 'CloudTech Systems',
     industry: 'Cloud Computing',
-    location: 'Seattle, WA',
+    location: 'Bukit Jalil, Kuala Lumpur',
     size: 'Large',
     position: 'Software Engineer',
     jobType: 'Full-time',
     jobDescription: 'Build scalable cloud infrastructure and microservices using modern technologies and DevOps practices.',
-    salaryRange: '$100k - $130k',
+    salaryRange: 'RM10000 - RM13000',
     postedDate: '3 days ago',
     matchScore: 82,
     matchingSkills: ['AWS', 'Node.js', 'Docker', 'Kubernetes', 'Git'],
@@ -518,12 +458,12 @@ const allCompanies = ref([
     id: 4,
     name: 'StartupX',
     industry: 'Fintech',
-    location: 'Austin, TX',
+    location: 'Damansara, Selangor',
     size: 'Startup',
     position: 'Frontend Developer',
     jobType: 'Full-time',
     jobDescription: 'Help revolutionize financial services with modern web technologies and user-centric design.',
-    salaryRange: '$90k - $120k',
+    salaryRange: 'RM9000 - RM12000',
     postedDate: '5 days ago',
     matchScore: 78,
     matchingSkills: ['React', 'JavaScript', 'CSS', 'Git'],
@@ -538,7 +478,7 @@ const allCompanies = ref([
     position: 'UI/UX Developer',
     jobType: 'Contract',
     jobDescription: 'Create beautiful and intuitive user interfaces for web and mobile applications.',
-    salaryRange: '$80k - $100k',
+    salaryRange: 'RM8000 - RM10000',
     postedDate: '1 week ago',
     matchScore: 75,
     matchingSkills: ['React', 'CSS', 'Figma', 'JavaScript'],
@@ -548,12 +488,12 @@ const allCompanies = ref([
     id: 6,
     name: 'AI Innovations',
     industry: 'Artificial Intelligence',
-    location: 'Boston, MA',
+    location: 'Batu Pahat, Johor',
     size: 'Medium',
     position: 'Machine Learning Engineer',
     jobType: 'Full-time',
     jobDescription: 'Develop AI-powered applications and machine learning models for various industries.',
-    salaryRange: '$130k - $160k',
+    salaryRange: 'RM13000 - RM16000',
     postedDate: '4 days ago',
     matchScore: 72,
     matchingSkills: ['Python', 'TensorFlow', 'JavaScript', 'SQL'],

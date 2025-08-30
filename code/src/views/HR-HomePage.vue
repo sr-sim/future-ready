@@ -126,19 +126,6 @@
               </div>
             </div>
             <div class="p-6 space-y-3">
-              <router-link
-                to="/upload"
-                class="flex items-center p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl hover:from-blue-100 hover:to-indigo-100 transition-all duration-200 group"
-              >
-                <div class="h-10 w-10 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center mr-4">
-                  <UploadCloudIcon class="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <p class="text-sm font-semibold text-gray-900 group-hover:text-blue-700">Upload Resumes</p>
-                  <p class="text-xs text-gray-500">Add new candidates</p>
-                </div>
-                <ChevronRightIcon class="h-4 w-4 text-gray-400 ml-auto group-hover:text-blue-500" />
-              </router-link>
 
               <router-link
                 to="/ranking"
@@ -212,14 +199,6 @@ const recentActivities = ref([
     time: '2 min ago',
     icon: UserIcon,
     iconBg: 'bg-gradient-to-r from-blue-500 to-indigo-500'
-  },
-  {
-    id: 2,
-    title: 'Interview scheduled',
-    description: 'Michael Chen - Frontend Engineer interview at 2:00 PM',
-    time: '15 min ago',
-    icon: CalendarIcon,
-    iconBg: 'bg-gradient-to-r from-green-500 to-emerald-500'
   },
   {
     id: 3,
