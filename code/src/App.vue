@@ -23,7 +23,7 @@ const menus = {
   company: [
     { name: "Home", to: "/hrhome", icon: HomeIcon },
     { name: "Job Management", to: "/upload", icon: UploadCloudIcon },
-    { name: "AI Matching Result", to: "/ranking", icon: BarChart3Icon },
+    { name: "AI Matching Result", to: "/results", icon: BarChart3Icon },
     { name: "Shortlisted Candidates", to: "/shortlist", icon: StarIcon },
     { name: "Onboarding Material", to: "/material", icon: FolderIcon },
   ]

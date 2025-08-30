@@ -386,22 +386,22 @@ const recommendedJobs = ref([
     id: 1,
     title: 'Senior Frontend Developer',
     company: 'TechCorp Solutions',
-    location: 'San Francisco, CA',
+    location: 'Puchong, Selangor',
     type: 'Full-time',
     description: 'Join our innovative team building next-generation web applications with React and TypeScript.',
     matchScore: 95,
-    salary: '$120k - $150k',
+    salary: 'RM8000 - RM15000',
     matchingSkills: ['React', 'TypeScript', 'JavaScript', 'CSS', 'Node.js']
   },
   {
     id: 2,
     title: 'Full Stack Engineer',
     company: 'DataFlow Inc',
-    location: 'New York, NY',
+    location: 'Johor Bahru, Johor',
     type: 'Full-time',
     description: 'Work on cutting-edge data visualization and analytics platforms using modern technologies.',
     matchScore: 88,
-    salary: '$110k - $140k',
+    salary: 'RM11000 - RM14000',
     matchingSkills: ['JavaScript', 'Python', 'React', 'SQL']
   },
   {
@@ -412,7 +412,7 @@ const recommendedJobs = ref([
     type: 'Contract',
     description: 'Create beautiful and intuitive user interfaces for web and mobile applications.',
     matchScore: 82,
-    salary: '$80k - $100k',
+    salary: 'RM8000 - RM10000',
     matchingSkills: ['React', 'CSS', 'Figma', 'JavaScript']
   }
 ])

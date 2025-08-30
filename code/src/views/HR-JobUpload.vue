@@ -553,7 +553,7 @@
                 type="text"
                 required
                 class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                placeholder="e.g. $80k - $120k"
+                placeholder="e.g. RM8000 - RM12000"
               />
             </div>
             <div>
@@ -801,9 +801,9 @@ const allJobs = ref([
     id: 1,
     title: 'Senior Frontend Developer',
     department: 'Engineering',
-    location: 'San Francisco, CA',
+    location: 'Puchong, Selangor',
     jobType: 'Full-time',
-    salary: '$120k - $150k',
+    salary: 'RM8000 - RM15000',
     experience: 'Senior Level',
     description: 'We are looking for a Senior Frontend Developer to join our innovative team building next-generation web applications.',
     requiredSkills: ['React', 'TypeScript', 'JavaScript', 'CSS', 'Node.js'],
@@ -815,9 +815,9 @@ const allJobs = ref([
     id: 2,
     title: 'Product Marketing Manager',
     department: 'Marketing',
-    location: 'New York, NY',
+    location: 'Johor Bahru, Johor',
     jobType: 'Full-time',
-    salary: '$90k - $120k',
+    salary: 'RM9000 - RM12000',
     experience: 'Mid Level',
     description: 'Join our marketing team to drive product adoption and create compelling marketing campaigns.',
     requiredSkills: ['Marketing Strategy', 'Analytics', 'Content Creation', 'SEO'],
@@ -831,7 +831,7 @@ const allJobs = ref([
     department: 'Engineering',
     location: 'Remote',
     jobType: 'Full-time',
-    salary: '$110k - $140k',
+    salary: 'RM11000 - RM14000',
     experience: 'Mid Level',
     description: 'Analyze complex data sets and build machine learning models to drive business insights.',
     requiredSkills: ['Python', 'Machine Learning', 'SQL', 'Statistics', 'TensorFlow'],
@@ -843,9 +843,9 @@ const allJobs = ref([
     id: 4,
     title: 'UX Designer',
     department: 'Engineering',
-    location: 'Austin, TX',
+    location: 'Bukit Jalil, Kuala Lumpur',
     jobType: 'Contract',
-    salary: '$70k - $90k',
+    salary: 'RM7000 - RM9000',
     experience: 'Mid Level',
     description: 'Create intuitive and beautiful user experiences for our web and mobile applications.',
     requiredSkills: ['Figma', 'User Research', 'Prototyping', 'Design Systems'],
@@ -857,9 +857,9 @@ const allJobs = ref([
     id: 5,
     title: 'Sales Development Representative',
     department: 'Sales',
-    location: 'Boston, MA',
+    location: 'Damansara, Selangor',
     jobType: 'Full-time',
-    salary: '$50k - $70k',
+    salary: 'RM5000 - RM7000',
     experience: 'Entry Level',
     description: 'Generate new business opportunities and qualify leads for our sales team.',
     requiredSkills: ['Sales', 'Communication', 'CRM', 'Lead Generation'],
