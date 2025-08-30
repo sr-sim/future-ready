@@ -23,12 +23,12 @@
               <PlusIcon class="h-5 w-5 mr-2" />
               Post New Job
             </button>
-            <div class="flex items-center space-x-2">
-              <div class="h-8 w-8 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full flex items-center justify-center">
-                <span class="text-white text-sm font-semibold">{{ userInitials }}</span>
-              </div>
-              <span class="text-gray-700 font-medium">{{ userName }}</span>
+                      <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-2 bg-gray-100 px-3 py-2 rounded-lg">
+              <div class="h-2 w-2 bg-green-500 rounded-full"></div>
+              <span class="text-sm text-gray-700">HR Manager</span>
             </div>
+          </div>
           </div>
         </div>
       </div>
