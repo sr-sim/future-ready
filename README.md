@@ -23,7 +23,7 @@
 ## Technology Stack Used
 - Frontend: Vue.js (with composition API and lucide-vue-next icons), Tailwind CSS for styling.
 -	Backend/Server Scripts: Node.js, using Supabase as a backend database.
--	AI Model: Uses the @xenova/transformers library to run a transformer-based embedding model (Xenova/bge-small-en-v1.5) for feature extraction and semantic matching.
+-	AI Model: Uses the bge-small-en-v1.5 for feature extraction and semantic matching.
 -	Database: Supabase (PostgreSQL) is used to store job postings, applicant profiles, and their embeddings.
 
 ## Setup Instructions
