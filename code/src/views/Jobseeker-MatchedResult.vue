@@ -30,11 +30,9 @@
       </div>
     </header>
 
-    <!-- No Matching Completed State -->
-
 
     <!-- Existing Results Content (only show if matching completed) -->
-    <div  class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       <!-- Filters Section -->
       <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden mb-8">
         <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
@@ -54,11 +52,12 @@
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               >
                 <option value="">All Locations</option>
-                <option value="Puchong, Selangor">Puchong, Selangor</option>
-                <option value="Johor Bahru, Johor">Johor Bahru, Johor</option>
-                <option value="Bukit Jalil, Kuala Lumpur">Bukit Jalil, Kuala Lumpur</option>
-                <option value="Damansara, Selangor">Damansara, Selangor</option>
+                <option value="San Francisco, CA">San Francisco, CA</option>
+                <option value="New York, NY">New York, NY</option>
+                <option value="Seattle, WA">Seattle, WA</option>
+                <option value="Austin, TX">Austin, TX</option>
                 <option value="Remote">Remote</option>
+                <option value="Boston, MA">Boston, MA</option>
               </select>
             </div>
 
@@ -368,6 +367,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import {
   TargetIcon,
   ArrowLeftIcon,
@@ -387,6 +387,8 @@ import {
   CheckCircleIcon
 } from 'lucide-vue-next'
 
+const router = useRouter()
+
 // Filters
 const filters = ref({
   location: '',
@@ -394,8 +396,12 @@ const filters = ref({
   companySize: '',
   sortBy: 'score'
 })
-const userName = ref('Sarah Johnson')
-const userInitials = computed(() => userName.value.split(' ').map(n => n[0]).join(''))
+
+const userName = ref('')
+const userInitials = computed(() => {
+  if (!userName.value) return ''
+  return userName.value.split(' ').map(n => n[0]).join('')
+})
 // Pagination
 const currentPage = ref(1)
 const itemsPerPage = ref(5)
@@ -407,99 +413,9 @@ const selectedCompany = ref(null)
 // Matching status
 const hasCompletedMatching = ref(false)
 
-// Sample company data
-const allCompanies = ref([
-  {
-    id: 1,
-    name: 'TechCorp Solutions',
-    industry: 'Software Development',
-    location: 'Puchong, Selangor',
-    size: 'Large',
-    position: 'Senior Frontend Developer',
-    jobType: 'Full-time',
-    jobDescription: 'Join our innovative team building next-generation web applications with React, TypeScript, and modern development practices.',
-    salaryRange: 'RM8000 - RM15000',
-    postedDate: '2 days ago',
-    matchScore: 95,
-    matchingSkills: ['React', 'TypeScript', 'JavaScript', 'CSS', 'Node.js', 'Git'],
-    description: 'Leading technology company focused on innovative web solutions and digital transformation.'
-  },
-  {
-    id: 2,
-    name: 'DataFlow Inc',
-    industry: 'Data Analytics',
-    location: 'Johor Bahru, Johor',
-    size: 'Medium',
-    position: 'Full Stack Engineer',
-    jobType: 'Full-time',
-    jobDescription: 'Work on cutting-edge data visualization and analytics platforms using React, Python, and cloud technologies.',
-    salaryRange: 'RM11000 - RM14000',
-    postedDate: '1 week ago',
-    matchScore: 88,
-    matchingSkills: ['Python', 'React', 'SQL', 'AWS', 'JavaScript'],
-    description: 'Data analytics company helping businesses make data-driven decisions with advanced visualization tools.'
-  },
-  {
-    id: 3,
-    name: 'CloudTech Systems',
-    industry: 'Cloud Computing',
-    location: 'Bukit Jalil, Kuala Lumpur',
-    size: 'Large',
-    position: 'Software Engineer',
-    jobType: 'Full-time',
-    jobDescription: 'Build scalable cloud infrastructure and microservices using modern technologies and DevOps practices.',
-    salaryRange: 'RM10000 - RM13000',
-    postedDate: '3 days ago',
-    matchScore: 82,
-    matchingSkills: ['AWS', 'Node.js', 'Docker', 'Kubernetes', 'Git'],
-    description: 'Cloud infrastructure company providing scalable solutions for enterprise clients worldwide.'
-  },
-  {
-    id: 4,
-    name: 'StartupX',
-    industry: 'Fintech',
-    location: 'Damansara, Selangor',
-    size: 'Startup',
-    position: 'Frontend Developer',
-    jobType: 'Full-time',
-    jobDescription: 'Help revolutionize financial services with modern web technologies and user-centric design.',
-    salaryRange: 'RM9000 - RM12000',
-    postedDate: '5 days ago',
-    matchScore: 78,
-    matchingSkills: ['React', 'JavaScript', 'CSS', 'Git'],
-    description: 'Innovative fintech startup disrupting traditional banking with mobile-first solutions.'
-  },
-  {
-    id: 5,
-    name: 'DesignStudio Pro',
-    industry: 'Design & Creative',
-    location: 'Remote',
-    size: 'Medium',
-    position: 'UI/UX Developer',
-    jobType: 'Contract',
-    jobDescription: 'Create beautiful and intuitive user interfaces for web and mobile applications.',
-    salaryRange: 'RM8000 - RM10000',
-    postedDate: '1 week ago',
-    matchScore: 75,
-    matchingSkills: ['React', 'CSS', 'Figma', 'JavaScript'],
-    description: 'Creative design studio specializing in user experience and interface design for digital products.'
-  },
-  {
-    id: 6,
-    name: 'AI Innovations',
-    industry: 'Artificial Intelligence',
-    location: 'Batu Pahat, Johor',
-    size: 'Medium',
-    position: 'Machine Learning Engineer',
-    jobType: 'Full-time',
-    jobDescription: 'Develop AI-powered applications and machine learning models for various industries.',
-    salaryRange: 'RM13000 - RM16000',
-    postedDate: '4 days ago',
-    matchScore: 72,
-    matchingSkills: ['Python', 'TensorFlow', 'JavaScript', 'SQL'],
-    description: 'AI research company developing cutting-edge machine learning solutions for enterprise clients.'
-  }
-])
+// Actual matching results from AI
+const allCompanies = ref([])
+const matchingData = ref(null)
 
 // Computed properties
 const filteredCompanies = computed(() => {
@@ -600,9 +516,9 @@ const hasActiveFilters = computed(() => {
 // Methods
 const goBack = () => {
   if (hasCompletedMatching.value) {
-    window.location.href = '/jobmatch'
+    router.push('/jobmatch')
   } else {
-    window.location.href = '/jshome' // or wherever the dashboard is
+    router.push('/jshome')
   }
 }
 
@@ -666,17 +582,63 @@ const confirmApplication = () => {
 }
 
 const goToMatching = () => {
-  window.location.href = '/jobmatch'
+  router.push('/jobmatch')
+}
+
+const loadMatchingResults = () => {
+  try {
+    const savedResults = localStorage.getItem('aiMatchingResults')
+    if (savedResults) {
+      const results = JSON.parse(savedResults)
+      matchingData.value = results
+      
+      // Load user name from profile
+      if (results.profile) {
+        userName.value = `${results.profile.first_name} ${results.profile.last_name}`
+      }
+      
+      // Load matching companies
+      if (results.matches && Array.isArray(results.matches)) {
+        allCompanies.value = results.matches.map(match => ({
+          id: match.id,
+          name: match.name,
+          industry: match.industry,
+          location: match.location,
+          size: match.size,
+          position: match.position,
+          jobType: match.jobType,
+          jobDescription: match.jobDescription,
+          salaryRange: match.salaryRange,
+          postedDate: match.postedDate,
+          matchScore: match.matchScore,
+          matchingSkills: match.matchingSkills,
+          description: match.description,
+          requirements: match.requirements,
+          responsibilities: match.responsibilities,
+          department: match.department,
+          experienceLevel: match.experienceLevel
+        }))
+      }
+      
+      hasCompletedMatching.value = true
+    } else {
+      hasCompletedMatching.value = false
+    }
+  } catch (error) {
+    console.error('Error loading matching results:', error)
+    hasCompletedMatching.value = false
+  }
 }
 
 const checkMatchingStatus = () => {
-  // Check if user has completed AI matching (you can store this in localStorage or get from API)
+  // Check if user has completed AI matching
   const matchingCompleted = localStorage.getItem('aiMatchingCompleted')
   hasCompletedMatching.value = matchingCompleted === 'true'
 }
 
 onMounted(() => {
   checkMatchingStatus()
+  loadMatchingResults()
 })
 </script>
 

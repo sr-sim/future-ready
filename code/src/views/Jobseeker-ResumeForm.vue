@@ -551,89 +551,6 @@
       </div>
     </div>
 
-    <!-- Company Matching Modal -->
-    <div
-      v-if="showMatching"
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-    >
-      <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-        <div class="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-4">
-          <div class="flex items-center justify-between text-white">
-            <div class="flex items-center">
-              <SearchIcon class="h-6 w-6 mr-3" />
-              <h2 class="text-xl font-bold">Matching Companies</h2>
-            </div>
-            <button
-              @click="showMatching = false"
-              class="text-white hover:text-gray-200 transition-colors"
-            >
-              <XIcon class="h-6 w-6" />
-            </button>
-          </div>
-        </div>
-        
-        <div class="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
-          <div class="mb-6">
-            <p class="text-gray-600 mb-4">Based on your profile, we found {{ matchingCompanies.length }} companies that match your skills and experience:</p>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div
-                v-for="company in matchingCompanies"
-                :key="company.id"
-                class="border border-gray-200 rounded-xl p-4 hover:shadow-lg transition-all duration-200"
-              >
-                <div class="flex items-start justify-between mb-3">
-                  <div class="flex items-center">
-                    <div class="h-12 w-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center mr-3">
-                      <BuildingIcon class="h-6 w-6 text-white" />
-                    </div>
-                    <div>
-                      <h3 class="font-bold text-gray-900">{{ company.name }}</h3>
-                      <p class="text-sm text-gray-600">{{ company.industry }}</p>
-                    </div>
-                  </div>
-                  <div class="text-right">
-                    <div class="text-lg font-bold" :class="getMatchColor(company.matchScore)">
-                      {{ company.matchScore }}%
-                    </div>
-                    <div class="text-xs text-gray-500">Match</div>
-                  </div>
-                </div>
-                
-                <div class="mb-3">
-                  <h4 class="font-semibold text-gray-900 mb-1">{{ company.position }}</h4>
-                  <p class="text-sm text-gray-600 mb-2">{{ company.location }}</p>
-                  <p class="text-sm text-gray-700">{{ company.description }}</p>
-                </div>
-                
-                <div class="mb-3">
-                  <h5 class="text-sm font-semibold text-gray-700 mb-1">Matching Skills:</h5>
-                  <div class="flex flex-wrap gap-1">
-                    <span
-                      v-for="skill in company.matchingSkills"
-                      :key="skill"
-                      class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full"
-                    >
-                      {{ skill }}
-                    </span>
-                  </div>
-                </div>
-                
-                <div class="flex items-center justify-between">
-                  <div class="text-sm text-gray-600">
-                    <span class="font-semibold">Salary:</span> {{ company.salary }}
-                  </div>
-                  <button class="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:from-purple-700 hover:to-pink-700 transition-all">
-                    Apply Now
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- Save Success Modal -->
     <div
       v-if="showSaveSuccess"
@@ -665,7 +582,8 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { supabase } from '../lib/supabase'
 import {
   UserPlusIcon,
@@ -687,6 +605,7 @@ import {
   StarIcon
 } from 'lucide-vue-next'
 
+const router = useRouter()
 const isSaving = ref(false)
 const showSaveSuccess = ref(false)
 const showMatching = ref(false)
@@ -723,55 +642,7 @@ const formData = ref({
   ],
   skills: ''
 })
-const userName = ref('Sarah Johnson')
-const userInitials = computed(() => userName.value.split(' ').map(n => n[0]).join(''))
-// Sample matching companies data
-const matchingCompanies = ref([
-  {
-    id: 1,
-    name: 'TechCorp Solutions',
-    industry: 'Software Development',
-    position: 'Senior Frontend Developer',
-    location: 'Puchong, Selangor',
-    description: 'Join our innovative team building next-generation web applications.',
-    matchScore: 92,
-    salary: 'RM12000 - RM15000',
-    matchingSkills: ['JavaScript', 'React', 'Node.js']
-  },
-  {
-    id: 2,
-    name: 'DataFlow Inc',
-    industry: 'Data Analytics',
-    position: 'Full Stack Engineer',
-    location: 'Johor Bahru, Johor',
-    description: 'Work on cutting-edge data visualization and analytics platforms.',
-    matchScore: 87,
-    salary: 'RM11000 - RM14000',
-    matchingSkills: ['Python', 'SQL', 'React']
-  },
-  {
-    id: 3,
-    name: 'CloudTech Systems',
-    industry: 'Cloud Computing',
-    position: 'Software Engineer',
-    location: 'Bukit Jalil, Kuala Lumpur',
-    description: 'Build scalable cloud infrastructure and microservices.',
-    matchScore: 78,
-    salary: 'RM10000 - RM13000',
-    matchingSkills: ['AWS', 'Node.js', 'Git']
-  },
-  {
-    id: 4,
-    name: 'StartupX',
-    industry: 'Fintech',
-    position: 'Frontend Developer',
-    location: 'Damansara, Selangor',
-    description: 'Help revolutionize financial services with modern web technologies.',
-    matchScore: 73,
-    salary: 'RM9000 - RM12000',
-    matchingSkills: ['JavaScript', 'React', 'Git']
-  }
-])
+
 
 // Validation functions
 const validateRequiredFields = () => {
@@ -905,11 +776,13 @@ const saveResume = async () => {
     // Get current user from localStorage (from login)
     const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
     
-    // For demo purposes, we'll save without user_id
-    // In a real app, you'd have proper user authentication
-    // Prepare data for Supabase
+    if (!currentUser.id) {
+      throw new Error('User session not found. Please log in again.')
+    }
+    
+    // Prepare data for Supabase - map form data to job_seeker_profiles table structure
     const resumeData = {
-      // user_id will be NULL for demo purposes
+      user_id: currentUser.id,
       first_name: formData.value.personalInfo.fullName.split(' ')[0] || '',
       last_name: formData.value.personalInfo.fullName.split(' ').slice(1).join(' ') || '',
       phone: formData.value.personalInfo.phone,
@@ -919,33 +792,59 @@ const saveResume = async () => {
       skills: formData.value.skills.split(',').map(skill => skill.trim()).filter(Boolean),
       experience: formData.value.experience,
       education: formData.value.education,
-      profile_visibility: 'PUBLIC'
+      profile_visibility: 'PUBLIC',
+      allow_recruiter_contact: true,
+      email_notifications: true,
+      sms_notifications: false,
+      job_alerts: true,
+      updated_at: new Date().toISOString()
     }
     
-    // Save to Supabase
-    const { data, error } = await supabase
+    // Check if profile already exists for this user
+    const { data: existingProfile, error: checkError } = await supabase
       .from('job_seeker_profiles')
-      .upsert([resumeData], { 
-        onConflict: 'user_id',
-        ignoreDuplicates: false 
-      })
+      .select('id')
+      .eq('user_id', currentUser.id)
+      .single()
     
-    if (error) {
-      throw error
+    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 is "not found" error
+      throw checkError
+    }
+    
+    let result
+    if (existingProfile) {
+      // Update existing profile
+      const { data, error } = await supabase
+        .from('job_seeker_profiles')
+        .update(resumeData)
+        .eq('user_id', currentUser.id)
+        .select()
+      
+      if (error) throw error
+      result = data
+    } else {
+      // Insert new profile
+      const { data, error } = await supabase
+        .from('job_seeker_profiles')
+        .insert([resumeData])
+        .select()
+      
+      if (error) throw error
+      result = data
     }
     
     // Also save to localStorage as backup
     localStorage.setItem('savedResume', JSON.stringify(formData.value))
     
     // Generate embeddings for the saved profile (if data exists)
-    if (data && data.length > 0) {
-      await generateEmbeddings(data[0].id)
+    if (result && result.length > 0) {
+      await generateEmbeddings(result[0].id)
     }
     
     isSaving.value = false
     showSaveSuccess.value = true
     
-    console.log('Resume saved successfully:', data)
+    console.log('Resume saved successfully:', result)
     
   } catch (error) {
     console.error('Error saving resume:', error)
@@ -959,29 +858,64 @@ const loadSavedResume = async () => {
     // Get current user from localStorage (from login)
     const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
     
-    // For demo purposes, we'll just use localStorage since we can't match by user_id
-    // In a real app, you'd have proper user authentication with UUIDs
-    if (!currentUser.email) {
-      // Fallback to localStorage if no user ID
-      const saved = localStorage.getItem('savedResume')
-      if (saved) {
-        formData.value = JSON.parse(saved)
-        return
-      } else {
-        showValidationAlert('No saved resume found. Please fill out the form first.')
-        return
-      }
+    if (!currentUser.id) {
+      showValidationAlert('User session not found. Please log in again.')
+      return
     }
     
-    // For demo purposes, just use localStorage
-    // In a real app, you'd load from Supabase using user authentication
-    const saved = localStorage.getItem('savedResume')
-    if (saved) {
-      formData.value = JSON.parse(saved)
+    // Load profile from database
+    const { data: profile, error } = await supabase
+      .from('job_seeker_profiles')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .single()
+    
+    if (error) {
+      if (error.code === 'PGRST116') { // Not found
+        showValidationAlert('No saved resume found. Please fill out the form first.')
+      } else {
+        throw error
+      }
+      return
+    }
+    
+    if (profile) {
+      // Map database data back to form structure
+      formData.value = {
+        personalInfo: {
+          fullName: `${profile.first_name} ${profile.last_name}`.trim(),
+          email: currentUser.email || '',
+          phone: profile.phone || '',
+          location: profile.location || '',
+          linkedin: '' // Not stored in current schema
+        },
+        summary: profile.summary || '',
+        experience: profile.experience || [
+          {
+            title: '',
+            company: '',
+            startDate: '',
+            endDate: '',
+            current: false,
+            description: ''
+          }
+        ],
+        education: profile.education || [
+          {
+            degree: '',
+            field: '',
+            institution: '',
+            year: '',
+            gpa: ''
+          }
+        ],
+        skills: Array.isArray(profile.skills) ? profile.skills.join(', ') : (profile.skills || '')
+      }
+      
+      console.log('Resume loaded successfully from database')
     } else {
       showValidationAlert('No saved resume found. Please fill out the form first.')
     }
-    return
     
   } catch (error) {
     console.error('Error loading resume:', error)
@@ -1030,7 +964,8 @@ const handleFindMatches = () => {
     showValidationAlert(`Please complete all required fields before finding matches:\n• ${errors.join('\n• ')}`)
     return
   }
-  showMatching.value = true
+  // Navigate to the JobMatching page
+  router.push('/jobmatch')
 }
 
 const getMatchColor = (score) => {
@@ -1089,6 +1024,61 @@ const generateEmbeddings = async (profileId) => {
     console.error('Error generating embeddings:', error)
   }
 }
+
+// Auto-load existing resume data when component mounts
+onMounted(async () => {
+  try {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+    
+    if (currentUser.id) {
+      // Try to load existing resume data
+      const { data: profile, error } = await supabase
+        .from('job_seeker_profiles')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .single()
+      
+      if (!error && profile) {
+        // Auto-populate form with existing data
+        formData.value = {
+          personalInfo: {
+            fullName: `${profile.first_name} ${profile.last_name}`.trim(),
+            email: currentUser.email || '',
+            phone: profile.phone || '',
+            location: profile.location || '',
+            linkedin: '' // Not stored in current schema
+          },
+          summary: profile.summary || '',
+          experience: profile.experience || [
+            {
+              title: '',
+              company: '',
+              startDate: '',
+              endDate: '',
+              current: false,
+              description: ''
+            }
+          ],
+          education: profile.education || [
+            {
+              degree: '',
+              field: '',
+              institution: '',
+              year: '',
+              gpa: ''
+            }
+          ],
+          skills: Array.isArray(profile.skills) ? profile.skills.join(', ') : (profile.skills || '')
+        }
+        
+        console.log('Auto-loaded existing resume data')
+      }
+    }
+  } catch (error) {
+    console.error('Error auto-loading resume data:', error)
+    // Don't show error to user for auto-load, just log it
+  }
+})
 </script>
 
 <style scoped>

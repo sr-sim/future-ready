@@ -9,7 +9,9 @@
               <UserIcon class="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 class="text-xl font-bold text-gray-900">Welcome back, {{ userName }}!</h1>
+              <h1 class="text-xl font-bold text-gray-900">
+                Welcome back, {{ isLoading ? 'Loading...' : userName }}!
+              </h1>
               <p class="text-sm text-gray-500">Find your dream job today</p>
             </div>
           </div>
@@ -24,7 +26,7 @@
               <div class="h-8 w-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center">
                 <span class="text-white text-sm font-semibold">{{ userInitials }}</span>
               </div>
-              <span class="text-gray-700 font-medium">{{ userName }}</span>
+              <span class="text-gray-700 font-medium">{{ isLoading ? 'Loading...' : userName }}</span>
             </div>
           </div>
           </div>
@@ -33,6 +35,28 @@
     </header>
 
     <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <!-- Error Message -->
+      <div
+        v-if="errorMessage"
+        class="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex items-start"
+      >
+        <div class="flex-1">
+          <p class="text-red-800 font-medium">{{ errorMessage }}</p>
+          <button
+            @click="fetchUserProfile"
+            class="mt-2 text-red-600 hover:text-red-700 text-sm font-medium underline"
+          >
+            Try again
+          </button>
+        </div>
+        <button
+          @click="errorMessage = ''"
+          class="text-red-400 hover:text-red-600"
+        >
+          ×
+        </button>
+      </div>
+
       <!-- Welcome Banner -->
       <div class="bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl shadow-xl p-8 mb-8 text-white">
         <div class="flex items-center justify-between">
@@ -347,7 +371,8 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { supabase } from '../lib/supabase'
 import {
   UserIcon,
   BellIcon,
@@ -365,10 +390,65 @@ import {
   LightbulbIcon
 } from 'lucide-vue-next'
 
-// User data (would come from authentication/API)
-const userName = ref('Sarah Johnson')
+// User data
+const userName = ref('')
+const userProfile = ref(null)
+const isLoading = ref(true)
+const errorMessage = ref('')
+
 const userInitials = computed(() => {
+  if (!userName.value) return ''
   return userName.value.split(' ').map(n => n[0]).join('')
+})
+
+// Fetch user profile data
+const fetchUserProfile = async () => {
+  try {
+    isLoading.value = true
+    
+    // Get current user from localStorage
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+    
+    if (!currentUser.id) {
+      console.error('No user ID found')
+      errorMessage.value = 'User session not found. Please log in again.'
+      return
+    }
+
+    // Fetch user profile from job_seeker_profiles table
+    const { data: profile, error } = await supabase
+      .from('job_seeker_profiles')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .single()
+
+    if (error) {
+      console.error('Error fetching user profile:', error)
+      errorMessage.value = 'Failed to load user profile. Please try again.'
+      return
+    }
+
+    if (profile) {
+      userProfile.value = profile
+      userName.value = `${profile.first_name} ${profile.last_name}`
+    } else {
+      console.log('No profile found for user')
+      // Fallback to demo data if no profile exists
+      userName.value = 'Demo User'
+    }
+
+  } catch (error) {
+    console.error('Error in fetchUserProfile:', error)
+    // Fallback to demo data on error
+    userName.value = 'Demo User'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// Load user profile when component mounts
+onMounted(() => {
+  fetchUserProfile()
 })
 
 // Dashboard stats
