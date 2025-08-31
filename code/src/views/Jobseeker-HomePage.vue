@@ -18,14 +18,15 @@
               <BellIcon class="h-6 w-6" />
               <span class="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center text-xs text-white">3</span>
             </button>
+                      <!-- User Profile -->
+          <div class="flex items-center space-x-4">
             <div class="flex items-center space-x-2">
-              <div class="h-8 w-8 bg-gradient-to-r from-green-600 to-emerald-600 rounded-full flex items-center justify-center">
+              <div class="h-8 w-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center">
                 <span class="text-white text-sm font-semibold">{{ userInitials }}</span>
               </div>
-              <button class="text-gray-600 hover:text-gray-900 transition-colors">
-                <ChevronDownIcon class="h-4 w-4" />
-              </button>
+              <span class="text-gray-700 font-medium">{{ userName }}</span>
             </div>
+          </div>
           </div>
         </div>
       </div>
@@ -385,22 +386,22 @@ const recommendedJobs = ref([
     id: 1,
     title: 'Senior Frontend Developer',
     company: 'TechCorp Solutions',
-    location: 'San Francisco, CA',
+    location: 'Puchong, Selangor',
     type: 'Full-time',
     description: 'Join our innovative team building next-generation web applications with React and TypeScript.',
     matchScore: 95,
-    salary: '$120k - $150k',
+    salary: 'RM8000 - RM15000',
     matchingSkills: ['React', 'TypeScript', 'JavaScript', 'CSS', 'Node.js']
   },
   {
     id: 2,
     title: 'Full Stack Engineer',
     company: 'DataFlow Inc',
-    location: 'New York, NY',
+    location: 'Johor Bahru, Johor',
     type: 'Full-time',
     description: 'Work on cutting-edge data visualization and analytics platforms using modern technologies.',
     matchScore: 88,
-    salary: '$110k - $140k',
+    salary: 'RM11000 - RM14000',
     matchingSkills: ['JavaScript', 'Python', 'React', 'SQL']
   },
   {
@@ -411,7 +412,7 @@ const recommendedJobs = ref([
     type: 'Contract',
     description: 'Create beautiful and intuitive user interfaces for web and mobile applications.',
     matchScore: 82,
-    salary: '$80k - $100k',
+    salary: 'RM8000 - RM10000',
     matchingSkills: ['React', 'CSS', 'Figma', 'JavaScript']
   }
 ])

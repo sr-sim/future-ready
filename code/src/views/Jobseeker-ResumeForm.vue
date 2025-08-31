@@ -25,6 +25,16 @@
               </div>
               <span class="text-sm font-semibold text-gray-700">{{ Math.round(progress) }}%</span>
             </div>
+
+                      <!-- User Profile -->
+          <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-2">
+              <div class="h-8 w-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center">
+                <span class="text-white text-sm font-semibold">{{ userInitials }}</span>
+              </div>
+              <span class="text-gray-700 font-medium">{{ userName }}</span>
+            </div>
+          </div>
             
             <!-- Save Button -->
           </div>
@@ -140,7 +150,7 @@
       </div>
 
       <!-- Quick Actions -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
         <button
           @click="loadSavedResume"
           class="bg-white rounded-xl shadow-lg border border-gray-100 p-4 hover:shadow-xl transition-all duration-200 text-left"
@@ -713,7 +723,8 @@ const formData = ref({
   ],
   skills: ''
 })
-
+const userName = ref('Sarah Johnson')
+const userInitials = computed(() => userName.value.split(' ').map(n => n[0]).join(''))
 // Sample matching companies data
 const matchingCompanies = ref([
   {
@@ -721,10 +732,10 @@ const matchingCompanies = ref([
     name: 'TechCorp Solutions',
     industry: 'Software Development',
     position: 'Senior Frontend Developer',
-    location: 'San Francisco, CA',
+    location: 'Puchong, Selangor',
     description: 'Join our innovative team building next-generation web applications.',
     matchScore: 92,
-    salary: '$120k - $150k',
+    salary: 'RM12000 - RM15000',
     matchingSkills: ['JavaScript', 'React', 'Node.js']
   },
   {
@@ -732,10 +743,10 @@ const matchingCompanies = ref([
     name: 'DataFlow Inc',
     industry: 'Data Analytics',
     position: 'Full Stack Engineer',
-    location: 'New York, NY',
+    location: 'Johor Bahru, Johor',
     description: 'Work on cutting-edge data visualization and analytics platforms.',
     matchScore: 87,
-    salary: '$110k - $140k',
+    salary: 'RM11000 - RM14000',
     matchingSkills: ['Python', 'SQL', 'React']
   },
   {
@@ -743,10 +754,10 @@ const matchingCompanies = ref([
     name: 'CloudTech Systems',
     industry: 'Cloud Computing',
     position: 'Software Engineer',
-    location: 'Seattle, WA',
+    location: 'Bukit Jalil, Kuala Lumpur',
     description: 'Build scalable cloud infrastructure and microservices.',
     matchScore: 78,
-    salary: '$100k - $130k',
+    salary: 'RM10000 - RM13000',
     matchingSkills: ['AWS', 'Node.js', 'Git']
   },
   {
@@ -754,10 +765,10 @@ const matchingCompanies = ref([
     name: 'StartupX',
     industry: 'Fintech',
     position: 'Frontend Developer',
-    location: 'Austin, TX',
+    location: 'Damansara, Selangor',
     description: 'Help revolutionize financial services with modern web technologies.',
     matchScore: 73,
-    salary: '$90k - $120k',
+    salary: 'RM9000 - RM12000',
     matchingSkills: ['JavaScript', 'React', 'Git']
   }
 ])

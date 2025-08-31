@@ -1,6 +1,9 @@
 <script setup>
 import { ref, computed } from 'vue'
-import { HomeIcon, UploadCloudIcon, BarChart3Icon, StarIcon } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
+import { HomeIcon, UploadCloudIcon, BarChart3Icon, StarIcon, FolderIcon } from 'lucide-vue-next'
+
+const router = useRouter()
 
 // Sidebar state
 const sidebarOpen = ref(true)
@@ -19,14 +22,22 @@ const menus = {
   ],
   company: [
     { name: "Home", to: "/hrhome", icon: HomeIcon },
-    { name: "Post a Job", to: "/upload", icon: UploadCloudIcon },
-    { name: "AI matching", to: "/ranking", icon: UploadCloudIcon },
-    { name: "Shortlist", to: "/shortlist", icon: StarIcon },
+    { name: "Job Management", to: "/upload", icon: UploadCloudIcon },
+    { name: "AI Matching Result", to: "/results", icon: BarChart3Icon },
+    { name: "Shortlisted Candidates", to: "/shortlist", icon: StarIcon },
+    { name: "Onboarding Material", to: "/material", icon: FolderIcon },
   ]
 }
 
 // Pick correct menu
 const currentMenu = computed(() => menus[role.value] || [])
+
+// Logout function
+function logout() {
+  // Clear role or any auth info if needed
+  localStorage.removeItem("role")
+  router.push("/")
+}
 </script>
 
 <template>
