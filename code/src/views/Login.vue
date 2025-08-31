@@ -307,6 +307,15 @@
         </div>
 
         <form @submit.prevent="handleSignUp" class="p-6 space-y-4 overflow-y-auto max-h-[calc(90vh-80px)]">
+          <!-- Error Message -->
+          <div
+            v-if="signUpError"
+            class="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start text-sm"
+          >
+            <AlertCircleIcon class="h-4 w-4 text-red-600 mr-2 mt-0.5 flex-shrink-0" />
+            <p class="text-red-800">{{ signUpError }}</p>
+          </div>
+          
           <!-- Company-specific fields -->
           <div v-if="selectedAccountType === 'company'" class="space-y-4">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -667,6 +676,7 @@
 
 <script setup>
 import { ref } from 'vue'
+import { supabase } from '../lib/supabase'
 import {
   UserPlusIcon,
   BuildingIcon,
@@ -695,6 +705,7 @@ const isLoggingIn = ref(false)
 const showSuccess = ref(false)
 const isLogin = ref(false)
 const loginError = ref('')
+const signUpError = ref('')
 const loginAccountType = ref('company')
 
 const formData = ref({
@@ -742,49 +753,242 @@ const selectAccountType = (type) => {
 }
 
 const handleSignUp = async () => {
+  // Clear previous errors
+  signUpError.value = ''
+  
+  // Validate passwords match
   if (formData.value.password !== formData.value.confirmPassword) {
-    alert('Passwords do not match!')
+    signUpError.value = 'Passwords do not match!'
+    return
+  }
+
+  // Validate password strength
+  if (formData.value.password.length < 6) {
+    signUpError.value = 'Password must be at least 6 characters long!'
     return
   }
 
   isSubmitting.value = true
-  await new Promise(resolve => setTimeout(resolve, 2000))
-  
-  const userData = {
-    accountType: selectedAccountType.value,
-    ...formData.value
+
+  try {
+    // Prepare user data for database
+    const userData = {
+      email: formData.value.email,
+      password: formData.value.password, // Note: In production, this should be hashed
+      account_type: selectedAccountType.value.toUpperCase(),
+      email_verified: false,
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }
+
+    // Save user data to the users table
+    const { data: userResult, error: userError } = await supabase
+      .from('users')
+      .insert([userData])
+      .select()
+
+    if (userError) {
+      throw new Error(userError.message)
+    }
+
+    if (!userResult || userResult.length === 0) {
+      throw new Error('Failed to create user account')
+    }
+
+    const createdUser = userResult[0]
+
+    // If it's a job seeker account, create job seeker profile
+    if (selectedAccountType.value === 'jobseeker') {
+      const jobSeekerProfile = {
+        user_id: createdUser.id,
+        first_name: formData.value.firstName,
+        last_name: formData.value.lastName,
+        phone: formData.value.phone,
+        location: formData.value.location,
+        profile_visibility: 'PUBLIC',
+        allow_recruiter_contact: true,
+        email_notifications: true,
+        sms_notifications: false,
+        job_alerts: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+
+      const { error: profileError } = await supabase
+        .from('job_seeker_profiles')
+        .insert([jobSeekerProfile])
+
+      if (profileError) {
+        // If profile creation fails, delete the user
+        await supabase
+          .from('users')
+          .delete()
+          .eq('id', createdUser.id)
+        throw new Error(profileError.message)
+      }
+    }
+
+    // If it's a company account, create company profile
+    if (selectedAccountType.value === 'company') {
+      const companyProfile = {
+        user_id: createdUser.id,
+        company_name: formData.value.companyName,
+        industry: formData.value.industry.toUpperCase(),
+        company_size: formData.value.companySize,
+        website: formData.value.website || null,
+        contact_email: formData.value.email,
+        contact_phone: null, // Can be added later
+        address: formData.value.companyAddress,
+        city: null, // Can be parsed from address later
+        state: null, // Can be parsed from address later
+        country: null, // Can be parsed from address later
+        postal_code: null, // Can be parsed from address later
+        founded_year: null, // Can be added later
+        employee_count: null, // Can be added later
+        company_type: null, // Can be added later
+        logo: null, // Can be added later
+        subscription_plan: 'FREE',
+        subscription_expiry: null,
+        features_enabled: null,
+        auto_screening: true,
+        email_notifications: true,
+        sms_notifications: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+
+      const { error: profileError } = await supabase
+        .from('company_profiles')
+        .insert([companyProfile])
+
+      if (profileError) {
+        // If profile creation fails, delete the user
+        await supabase
+          .from('users')
+          .delete()
+          .eq('id', createdUser.id)
+        throw new Error(profileError.message)
+      }
+    }
+
+    // Save to localStorage for demo purposes
+    localStorage.setItem('userData', JSON.stringify({
+      accountType: selectedAccountType.value,
+      ...formData.value,
+      id: createdUser.id
+    }))
+
+    // Set current user for session management
+    localStorage.setItem('currentUser', JSON.stringify({
+      id: createdUser.id,
+      email: formData.value.email,
+      accountType: selectedAccountType.value,
+      loginTime: new Date().toISOString()
+    }))
+
+    isSubmitting.value = false
+    selectedAccountType.value = null
+    isLogin.value = false
+    showSuccess.value = true
+
+  } catch (error) {
+    console.error('Sign up error:', error)
+    signUpError.value = error.message || 'Failed to create account. Please try again.'
+    isSubmitting.value = false
   }
-  localStorage.setItem('userData', JSON.stringify(userData))
-  
-  isSubmitting.value = false
-  selectedAccountType.value = null
-  isLogin.value = false
-  showSuccess.value = true
 }
 
 const handleLogin = async () => {
   loginError.value = ''
   isLoggingIn.value = true
   
-  await new Promise(resolve => setTimeout(resolve, 1500))
-  
-  const demoAccount = demoAccounts[loginAccountType.value]
-  if (loginData.value.email === demoAccount.email && loginData.value.password === demoAccount.password) {
-    const userData = {
-      accountType: loginAccountType.value,
-      email: loginData.value.email,
-      loginTime: new Date().toISOString()
+  try {
+    // First try to find user by email and verify password
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', loginData.value.email)
+      .eq('is_active', true)
+      .single()
+
+    if (userError || !userData) {
+      // Fallback to demo accounts for testing
+      const demoAccount = demoAccounts[loginAccountType.value]
+      if (loginData.value.email === demoAccount.email && loginData.value.password === demoAccount.password) {
+        const userData = {
+          accountType: loginAccountType.value,
+          email: loginData.value.email,
+          loginTime: new Date().toISOString()
+        }
+        localStorage.setItem('currentUser', JSON.stringify(userData))
+        localStorage.setItem("role", loginAccountType.value)
+        
+        isLoggingIn.value = false
+        showLoginModal.value = false
+        isLogin.value = true
+        showSuccess.value = true
+        return
+      } else {
+        throw new Error('Invalid credentials. Use demo accounts shown above.')
+      }
     }
-    localStorage.setItem('currentUser', JSON.stringify(userData))
-    localStorage.setItem("role", loginAccountType.value)
+
+    // Check if account is locked
+    if (userData.locked_until && new Date(userData.locked_until) > new Date()) {
+      throw new Error('Account is temporarily locked. Please try again later.')
+    }
+
+    // Verify password (in production, this should use proper password hashing)
+    if (userData.password !== loginData.value.password) {
+      // Increment login attempts
+      const newLoginAttempts = (userData.login_attempts || 0) + 1
+      const updateData = {
+        login_attempts: newLoginAttempts,
+        updated_at: new Date().toISOString()
+      }
+
+      // Lock account if too many failed attempts
+      if (newLoginAttempts >= 5) {
+        updateData.locked_until = new Date(Date.now() + 30 * 60 * 1000) // Lock for 30 minutes
+      }
+
+      await supabase
+        .from('users')
+        .update(updateData)
+        .eq('id', userData.id)
+
+      throw new Error('Invalid password.')
+    }
+
+    // Reset login attempts on successful login
+    await supabase
+      .from('users')
+      .update({
+        login_attempts: 0,
+        last_login_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', userData.id)
+
+    // Set current user for session management
+    localStorage.setItem('currentUser', JSON.stringify({
+      id: userData.id,
+      email: userData.email,
+      accountType: userData.account_type.toLowerCase(),
+      loginTime: new Date().toISOString()
+    }))
+    localStorage.setItem("role", userData.account_type.toLowerCase())
     
     isLoggingIn.value = false
     showLoginModal.value = false
     isLogin.value = true
     showSuccess.value = true
-  } else {
+
+  } catch (error) {
+    console.error('Login error:', error)
+    loginError.value = error.message || 'Login failed. Please try again.'
     isLoggingIn.value = false
-    loginError.value = 'Invalid credentials. Use demo accounts shown above.'
   }
 }
 

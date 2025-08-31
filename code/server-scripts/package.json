@@ -1,0 +1,32 @@
+{
+  "name": "ai-matching-backend",
+  "version": "1.0.0",
+  "description": "Backend API for AI job matching using BGE-small-en embeddings",
+  "main": "embedding-api.js",
+  "type": "module",
+  "scripts": {
+    "start": "node embedding-api.js",
+    "start:simple": "node embedding-api-simple.js",
+    "generate": "node generate-embeddings.js",
+    "dev": "nodemon embedding-api.js",
+    "dev:simple": "nodemon embedding-api-simple.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "@xenova/transformers": "^2.15.0",
+    "@supabase/supabase-js": "^2.39.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "keywords": [
+    "ai",
+    "matching",
+    "embeddings",
+    "bge-small-en",
+    "job-matching"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}
