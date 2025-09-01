@@ -46,8 +46,13 @@ Demo Video: https://www.youtube.com/watch?v=OFI4wRRKqbw
   - **Retrieval-Augmented Generation(RAG):** all-MiniLM-L6-v2 
   
 ## Setup Instructions
-1. Clone Github repos 
-2. Run command below.
+1. Clone Github repos to code editor
+2. Open terminal, the terminal will show path like (C:\Users\user\source\repos >)
+3. Run command below
+> cd future-ready
+> 
+> cd code
+>
 > npm install
 > 
 > npm install @supabase/supabase-js
@@ -61,6 +66,7 @@ Demo Video: https://www.youtube.com/watch?v=OFI4wRRKqbw
 
 ## Reflection on Challenges and Learning
 Throughout this project, we encountered several obstacles and challenges that pushed us out of our comfort zone and helped us grow. 
+
 At the beginning of the project development, we were unfamiliar with AI APIs, and unable to make the right decision on choosing the model that balanced both performance and accuracy was not easy. 
 We also struggled on understanding the flow of examining APIs, specifically under time constraints, while ensuring the integration of AI model that can work smoothly across the frontend, backend, and database in the system. 
 
