@@ -66,7 +66,7 @@ Guide: https://docs.npmjs.com/downloading-and-installing-node-js-and-npm
 > npm install concurrently
 > 
 > npm run dev:full
-5. Ctrl + click the local link
+5. Ctrl + click the local link or copy+paste the link to web browser
 
 ![Click Link example](code/public/LocalLinkexample.png)
 
