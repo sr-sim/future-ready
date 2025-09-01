@@ -370,7 +370,7 @@ const selectedJob = ref({
   department: 'Engineering',
   location: 'San Francisco, CA',
   jobType: 'Full-time',
-  salary: '$120k - $150k',
+  salary: 'RM12000 - RM15000',
   experience: 'Senior Level',
   description: 'We are looking for a Senior Frontend Developer to join our innovative team building next-generation web applications.',
   requiredSkills: ['React', 'TypeScript', 'JavaScript', 'CSS', 'Node.js'],
