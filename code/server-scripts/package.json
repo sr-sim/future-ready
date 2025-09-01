@@ -8,6 +8,7 @@
     "start": "node embedding-api.js",
     "start:simple": "node embedding-api-simple.js",
     "start:job-matching": "node job-matching-api.js",
+    "start:enhanced-qa": "node enhanced-document-qa-api.js",
 
     "generate": "node generate-embeddings.js",
     "document-qa": "node document-qa-api.js",
@@ -16,8 +17,9 @@
     "dev:job-matching": "nodemon job-matching-api.js",
 
     "dev:document-qa": "nodemon document-qa-api.js",
-    "dev:full": "concurrently \"npm run dev:job-matching\" \"npm run document-qa\" \"npm run dev\"",
-    "dev:ai": "concurrently \"npm run dev:job-matching\" \"npm run dev:document-qa\""
+    "dev:enhanced-qa": "nodemon enhanced-document-qa-api.js",
+    "dev:full": "concurrently \"npm run dev:job-matching\" \"npm run dev:document-qa\" \"npm run dev:enhanced-qa\" \"npm run dev\"",
+    "dev:ai": "concurrently \"npm run dev:job-matching\" \"npm run dev:document-qa\" \"npm run dev:enhanced-qa\""
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.38.0",
