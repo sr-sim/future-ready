@@ -421,7 +421,7 @@ const startMatching = async () => {
 
     // Step 3: Matching with Companies
     matchingSteps.value[2].active = true
-    const matchingResults = await AIMatchingService.performJobMatching(currentUser.id, 20)
+    const jobMatchingResults = await AIMatchingService.performJobMatching(currentUser.id, 20)
     matchingSteps.value[2].completed = true
     matchingSteps.value[2].active = false
     matchingProgress.value = 75
@@ -434,8 +434,8 @@ const startMatching = async () => {
     matchingProgress.value = 100
 
     // Calculate resume score
-    const resumeScoreValue = AIMatchingService.calculateResumeScore(matchingResults.profile)
-    const suggestions = AIMatchingService.generateImprovementSuggestions(matchingResults.profile)
+    const resumeScoreValue = AIMatchingService.calculateResumeScore(jobMatchingResults.profile)
+    const suggestions = AIMatchingService.generateImprovementSuggestions(jobMatchingResults.profile)
 
     // Update resume score
     resumeScore.value = {
@@ -448,15 +448,15 @@ const startMatching = async () => {
 
     // Update matching results
     matchingResults.value = {
-      totalMatches: matchingResults.totalMatches,
-      highMatches: matchingResults.highMatches,
-      averageScore: matchingResults.averageScore
+      totalMatches: jobMatchingResults.totalMatches,
+      highMatches: jobMatchingResults.highMatches,
+      averageScore: jobMatchingResults.averageScore
     }
 
     // Save results to localStorage for the results page
     localStorage.setItem('aiMatchingResults', JSON.stringify({
-      profile: matchingResults.profile,
-      matches: matchingResults.matches,
+      profile: jobMatchingResults.profile,
+      matches: jobMatchingResults.matches,
       resumeScore: resumeScore.value,
       matchingResults: matchingResults.value,
       timestamp: new Date().toISOString()

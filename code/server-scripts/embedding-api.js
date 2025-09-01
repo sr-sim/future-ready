@@ -3,7 +3,7 @@ import cors from 'cors'
 import { pipeline } from '@xenova/transformers'
 
 const app = express()
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT || 3004
 
 // Middleware
 app.use(cors())
@@ -74,8 +74,8 @@ async function startServer() {
   await initializeModel()
   
   app.listen(PORT, () => {
-    console.log(`Embedding API server running on port ${PORT}`)
-    console.log(`Health check: http://localhost:${PORT}/api/health`)
+    console.log(`🚀 Embedding API server running on port ${PORT}`)
+    console.log(`🔗 Health check: http://localhost:${PORT}/api/health`)
   })
 }
 

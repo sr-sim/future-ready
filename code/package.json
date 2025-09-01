@@ -8,6 +8,9 @@
   },
   "scripts": {
     "dev": "vite",
+    "dev:full": "concurrently \"npm run dev\" \"npm run dev:embedding-api\" \"npm run dev:document-qa\"",
+    "dev:embedding-api": "cd server-scripts && npm run dev",
+    "dev:document-qa": "cd server-scripts && npm run dev:document-qa",
     "build": "run-p type-check \"build-only {@}\" --",
     "preview": "vite preview",
     "build-only": "vite build",
@@ -33,6 +36,7 @@
     "@vue/eslint-config-typescript": "^14.6.0",
     "@vue/tsconfig": "^0.7.0",
     "autoprefixer": "^10.4.21",
+    "concurrently": "^9.2.1",
     "eslint": "^9.31.0",
     "eslint-plugin-vue": "~10.3.0",
     "jiti": "^2.4.2",

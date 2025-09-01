@@ -124,10 +124,12 @@
             </label>
             <input
               id="material-upload"
+              name="document-file"
               type="file"
               @change="handleFileUpload"
               required
               class="hidden"
+              accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png"
             />
             <span v-if="newDoc.file" class="text-xs text-blue-600 mt-2 block font-medium">
               <FileTextIcon class="h-4 w-4 inline mr-1" /> Selected: {{ newDoc.file.name }}
@@ -147,34 +149,50 @@
       <!-- Document List -->
       <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
         <h2 class="text-lg font-bold mb-4 text-gray-900">Materials for {{ jobs.find(j => j.id === selectedJobId)?.title }}</h2>
-        <div v-if="jobDocuments[selectedJobId] && jobDocuments[selectedJobId].length" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Loading state -->
+        <div v-if="isLoadingDocuments" class="text-center py-8">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p class="text-gray-600 mt-2">Loading documents...</p>
+        </div>
+
+        <!-- Error state -->
+        <div v-else-if="documentError" class="text-center py-8">
+          <p class="text-red-600">{{ documentError }}</p>
+          <button @click="loadCompanyDocuments" class="mt-2 text-blue-600 hover:text-blue-700">
+            Try again
+          </button>
+        </div>
+
+        <!-- Documents list -->
+        <div v-else-if="companyDocuments.length" class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div
-            v-for="doc in jobDocuments[selectedJobId]"
+            v-for="doc in companyDocuments"
             :key="doc.id"
             class="border border-gray-200 rounded-xl p-4 hover:shadow-lg transition-all duration-200"
           >
             <div class="flex items-start justify-between mb-3">
               <div class="flex items-center">
-                <div :class="['h-12 w-12 rounded-lg flex items-center justify-center mr-3', getDocumentTypeColor(doc.type)]">
+                <div :class="['h-12 w-12 rounded-lg flex items-center justify-center mr-3', getDocumentTypeColor(doc.file_type)]">
                   <FileTextIcon class="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h4 class="font-semibold text-gray-900">{{ doc.name }}</h4>
+                  <h4 class="font-semibold text-gray-900">{{ doc.title }}</h4>
                   <p class="text-sm text-gray-600">{{ doc.category }}</p>
+                  <p class="text-xs text-gray-500">{{ formatFileSize(doc.file_size) }} • {{ doc.file_type }}</p>
                 </div>
               </div>
               <div class="text-right">
-                <span :class="['px-2 py-1 rounded-full text-xs font-medium', doc.analyzed ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800']">
-                  {{ doc.analyzed ? 'Analyzed' : 'Pending' }}
+                <span :class="['px-2 py-1 rounded-full text-xs font-medium', doc.is_analyzed ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800']">
+                  {{ doc.is_analyzed ? 'Analyzed' : 'Pending' }}
                 </span>
               </div>
             </div>
             <p class="text-sm text-gray-700 mb-2">{{ doc.description }}</p>
             <div class="flex items-center gap-2 mt-2">
-              <button @click="previewDocument(doc)" class="bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-1 rounded-lg text-xs font-medium">
-                <EyeIcon class="h-4 w-4 inline mr-1" /> Preview
-              </button>
-              <button @click="markAnalyzed(doc)" :disabled="doc.analyzed" class="bg-green-50 hover:bg-green-100 text-green-700 px-3 py-1 rounded-lg text-xs font-medium disabled:opacity-50">
+              <a :href="doc.file_url" target="_blank" class="bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-1 rounded-lg text-xs font-medium">
+                <EyeIcon class="h-4 w-4 inline mr-1" /> View
+              </a>
+              <button @click="markAnalyzed(doc)" :disabled="doc.is_analyzed" class="bg-green-50 hover:bg-green-100 text-green-700 px-3 py-1 rounded-lg text-xs font-medium disabled:opacity-50">
                 <SparklesIcon class="h-4 w-4 inline mr-1" /> Mark Analyzed
               </button>
               <button @click="editDocument(doc)" class="bg-yellow-50 hover:bg-yellow-100 text-yellow-700 px-3 py-1 rounded-lg text-xs font-medium">
@@ -184,13 +202,13 @@
                 <TrashIcon class="h-4 w-4 inline mr-1" /> Delete
               </button>
             </div>
-            <div v-if="doc.analyzed && doc.summary" class="mt-3 bg-green-50 border border-green-200 rounded-lg p-3">
+            <div v-if="doc.is_analyzed && doc.document_summaries && doc.document_summaries[0]" class="mt-3 bg-green-50 border border-green-200 rounded-lg p-3">
               <h5 class="font-semibold text-green-700 mb-1">AI Summary:</h5>
-              <p class="text-sm text-gray-700">{{ doc.summary }}</p>
+              <p class="text-sm text-gray-700">{{ doc.document_summaries[0].summary_text }}</p>
             </div>
           </div>
         </div>
-        <div v-else class="text-gray-500 text-sm">No materials uploaded for this job yet.</div>
+        <div v-else class="text-gray-500 text-sm">No documents uploaded yet.</div>
       </div>
 
       <!-- Jobseeker Onboarding Progress Tracker -->
@@ -257,7 +275,8 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { supabase } from '../lib/supabase'
 import { 
   FolderIcon, FileTextIcon, EyeIcon, SparklesIcon, TrashIcon, XIcon
 } from 'lucide-vue-next'
@@ -270,6 +289,13 @@ const jobs = ref([
 ])
 
 const selectedJobId = ref(jobs.value[0].id)
+
+// Company documents (will be loaded from database)
+const companyDocuments = ref([])
+const isLoadingDocuments = ref(false)
+const documentError = ref('')
+const uploadError = ref('')
+const isUploading = ref(false)
 
 // Documents per job (object keyed by jobId)
 const jobDocuments = ref({
@@ -348,42 +374,128 @@ function handleFileUpload(e) {
   newDoc.value.file = e.target.files[0]
 }
 
-function uploadDocument() {
-  // 1. Validate all fields
-  if (
-    !newDoc.value.name ||
-    !newDoc.value.category ||
-    !newDoc.value.description ||
-    !newDoc.value.type ||
-    !newDoc.value.file
-  ) {
-    alert('Please fill in all fields and select a file.')
-    return
+async function uploadDocument() {
+  try {
+    // 1. Validate all fields
+    if (
+      !newDoc.value.name ||
+      !newDoc.value.category ||
+      !newDoc.value.description ||
+      !newDoc.value.type ||
+      !newDoc.value.file
+    ) {
+      alert('Please fill in all fields and select a file.')
+      return
+    }
+
+    isUploading.value = true
+    uploadError.value = ''
+
+    // 2. Get current user and company profile
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+    if (!currentUser.id) {
+      throw new Error('User session not found')
+    }
+
+    // Get user's company profile
+    const { data: companyProfile, error: companyError } = await supabase
+      .from('company_profiles')
+      .select('id')
+      .eq('user_id', currentUser.id)
+      .single()
+
+    if (companyError || !companyProfile) {
+      throw new Error('Company profile not found')
+    }
+
+    // 3. Upload file to Supabase Storage
+    const file = newDoc.value.file
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
+    const filePath = `company-documents/${companyProfile.id}/${fileName}`
+
+    const { data: uploadData, error: storageError } = await supabase.storage
+      .from('documents')
+      .upload(filePath, file)
+
+    if (storageError) {
+      throw new Error(`File upload failed: ${storageError.message}`)
+    }
+
+    // 4. Get public URL for the uploaded file
+    const { data: { publicUrl } } = supabase.storage
+      .from('documents')
+      .getPublicUrl(filePath)
+
+    // 5. Save document metadata to database
+    const documentData = {
+      company_id: companyProfile.id,
+      title: newDoc.value.name,
+      description: newDoc.value.description,
+      category: newDoc.value.category,
+      file_name: file.name,
+      file_url: publicUrl,
+      file_size: file.size,
+      file_type: `.${fileExt}`,
+      mime_type: file.type,
+      uploaded_by: currentUser.id,
+      is_public: false,
+      is_analyzed: false,
+      analysis_status: 'PENDING'
+    }
+
+    const { data: savedDocument, error: saveError } = await supabase
+      .from('company_documents')
+      .insert(documentData)
+      .select()
+      .single()
+
+    if (saveError) {
+      throw new Error(`Database save failed: ${saveError.message}`)
+    }
+
+    // 6. Add to local documents list
+    companyDocuments.value.unshift(savedDocument)
+
+    // 7. Reset form
+    newDoc.value = { name: '', category: 'HR Policies', description: '', type: 'PDF', file: null }
+    
+    // Clear file input
+    const fileInput = document.querySelector('input[type="file"]')
+    if (fileInput) fileInput.value = ''
+
+    alert('Document uploaded successfully!')
+
+  } catch (error) {
+    console.error('Error uploading document:', error)
+    uploadError.value = error.message
+    alert(`Upload failed: ${error.message}`)
+  } finally {
+    isUploading.value = false
   }
+}
 
-  // 2. Create new document object
-  const doc = {
-    id: Date.now(),
-    name: newDoc.value.name,
-    category: newDoc.value.category,
-    description: newDoc.value.description,
-    type: newDoc.value.type,
-    analyzed: false,
-    summary: '',
-    file: newDoc.value.file // Store file object (or upload to server here)
-  }
-
-  // 3. Add to selected job's documents
-  if (!jobDocuments.value[selectedJobId.value]) jobDocuments.value[selectedJobId.value] = []
-  jobDocuments.value[selectedJobId.value].push(doc)
-
-  // 4. Reset form
-  newDoc.value = { name: '', category: '', description: '', type: 'PDF', file: null }
+function formatFileSize(bytes) {
+  if (!bytes) return 'Unknown size'
+  
+  const sizes = ['Bytes', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(1024))
+  return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i]
 }
 
 function getDocumentTypeColor(type) {
-  const colors = { PDF: 'bg-red-500', DOCX: 'bg-blue-500', TXT: 'bg-gray-500' }
-  return colors[type] || 'bg-gray-500'
+  // Handle file extensions (e.g., '.pdf', '.docx')
+  const fileType = type ? type.replace('.', '').toUpperCase() : 'UNKNOWN'
+  const colors = { 
+    PDF: 'bg-red-500', 
+    DOCX: 'bg-blue-500', 
+    DOC: 'bg-blue-600',
+    TXT: 'bg-gray-500',
+    JPG: 'bg-green-500',
+    JPEG: 'bg-green-500',
+    PNG: 'bg-green-600'
+  }
+  return colors[fileType] || 'bg-gray-500'
 }
 
 function previewDocument(doc) {
@@ -391,16 +503,108 @@ function previewDocument(doc) {
   showPreview.value = true
 }
 
-function markAnalyzed(doc) {
-  doc.analyzed = true
-  doc.summary = 'AI summary generated for this document. (Demo text)'
+async function markAnalyzed(doc) {
+  try {
+    // Update the document in the database
+    const { error: updateError } = await supabase
+      .from('company_documents')
+      .update({ 
+        is_analyzed: true, 
+        analysis_status: 'COMPLETED' 
+      })
+      .eq('id', doc.id)
+
+    if (updateError) {
+      throw new Error(`Failed to update document: ${updateError.message}`)
+    }
+
+    // Update local state
+    doc.is_analyzed = true
+    doc.analysis_status = 'COMPLETED'
+    
+    alert('Document marked as analyzed!')
+  } catch (error) {
+    console.error('Error marking document as analyzed:', error)
+    alert(`Failed to mark as analyzed: ${error.message}`)
+  }
 }
 
 function editDocument(doc) {
   alert('Edit functionality coming soon!')
 }
 
-function deleteDocument(docId) {
-  jobDocuments.value[selectedJobId.value] = jobDocuments.value[selectedJobId.value].filter(d => d.id !== docId)
+// Load company documents from database
+const loadCompanyDocuments = async () => {
+  try {
+    isLoadingDocuments.value = true
+    documentError.value = ''
+    
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+    if (!currentUser.id) {
+      throw new Error('User session not found')
+    }
+    
+    // Get user's company profile
+    const { data: companyProfile, error: companyError } = await supabase
+      .from('company_profiles')
+      .select('id')
+      .eq('user_id', currentUser.id)
+      .single()
+    
+    if (companyError || !companyProfile) {
+      throw new Error('Company profile not found')
+    }
+    
+    // Fetch documents directly from the database
+    const { data: documents, error: fetchError } = await supabase
+      .from('company_documents')
+      .select('*')
+      .eq('company_id', companyProfile.id)
+      .order('created_at', { ascending: false })
+    
+    if (fetchError) {
+      throw new Error(`Failed to fetch documents: ${fetchError.message}`)
+    }
+    
+    companyDocuments.value = documents || []
+    
+  } catch (error) {
+    console.error('Error loading company documents:', error)
+    documentError.value = error.message
+    companyDocuments.value = []
+  } finally {
+    isLoadingDocuments.value = false
+  }
 }
+
+async function deleteDocument(docId) {
+  try {
+    if (!confirm('Are you sure you want to delete this document?')) {
+      return
+    }
+
+    // Delete from database
+    const { error: deleteError } = await supabase
+      .from('company_documents')
+      .delete()
+      .eq('id', docId)
+
+    if (deleteError) {
+      throw new Error(`Failed to delete document: ${deleteError.message}`)
+    }
+
+    // Remove from local list
+    companyDocuments.value = companyDocuments.value.filter(d => d.id !== docId)
+    
+    alert('Document deleted successfully!')
+  } catch (error) {
+    console.error('Error deleting document:', error)
+    alert(`Delete failed: ${error.message}`)
+  }
+}
+
+// Load documents when component mounts
+onMounted(() => {
+  loadCompanyDocuments()
+})
 </script>

@@ -281,26 +281,27 @@
                         <div 
                           :class="[
                             'h-12 w-12 rounded-lg flex items-center justify-center mr-3',
-                            getDocumentTypeColor(document.type)
+                            getDocumentTypeColor(document.file_type)
                           ]"
                         >
                           <FileTextIcon class="h-6 w-6 text-white" />
                         </div>
                         <div>
-                          <h4 class="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{{ document.name }}</h4>
+                          <h4 class="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{{ document.title }}</h4>
                           <p class="text-sm text-gray-600">{{ document.category }}</p>
+                          <p class="text-xs text-gray-500">{{ formatFileSize(document.file_size) }} • {{ document.file_type }}</p>
                         </div>
                       </div>
                       <div class="text-right">
                         <span
                           :class="[
                             'px-2 py-1 rounded-full text-xs font-medium',
-                            document.analyzed 
+                            document.is_analyzed 
                               ? 'bg-green-100 text-green-800'
                               : 'bg-yellow-100 text-yellow-800'
                           ]"
                         >
-                          {{ document.analyzed ? 'Analyzed' : 'Processing' }}
+                          {{ document.is_analyzed ? 'Analyzed' : 'Pending' }}
                         </span>
                       </div>
                     </div>
@@ -310,8 +311,8 @@
                     </div>
                     
                     <div class="flex items-center justify-between text-xs text-gray-500">
-                      <span>{{ document.size }} • {{ document.pages }} pages</span>
-                      <span>Updated {{ document.lastUpdated }}</span>
+                      <span>{{ formatFileSize(document.file_size) }} • {{ document.file_type }}</span>
+                      <span>Uploaded {{ formatDate(document.created_at) }}</span>
                     </div>
                     
                     <div class="mt-3 flex items-center space-x-2">
@@ -324,7 +325,7 @@
                       </button>
                       <button
                         @click.stop="viewSummary(document)"
-                        :disabled="!document.analyzed"
+                        :disabled="!document.is_analyzed"
                         class="flex-1 bg-green-50 hover:bg-green-100 text-green-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <SparklesIcon class="h-4 w-4 inline mr-1" />
@@ -436,10 +437,10 @@
             <div class="flex items-center justify-between text-white">
               <div class="flex items-center">
                 <BotIcon class="h-6 w-6 mr-3" />
-                <div>
-                  <h3 class="text-xl font-bold">AI Assistant</h3>
-                  <p class="text-green-100 text-sm">Powered by Google LLaMa</p>
-                </div>
+                                  <div>
+                    <h3 class="text-xl font-bold">AI Assistant</h3>
+                    <p class="text-green-100 text-sm">Powered by AI Model</p>
+                  </div>
               </div>
               <div class="flex items-center space-x-2">
                 <span class="bg-green-500 h-2 w-2 rounded-full"></span>
@@ -463,16 +464,59 @@
                   'max-w-xs lg:max-w-md px-4 py-2 rounded-2xl',
                   message.sender === 'user'
                     ? 'bg-blue-600 text-white'
+                    : message.isError
+                    ? 'bg-red-100 text-red-900 border border-red-200'
+                    : message.isInfo
+                    ? 'bg-blue-100 text-blue-900 border border-blue-200'
                     : 'bg-gray-100 text-gray-900'
                 ]"
               >
                 <div v-if="message.sender === 'bot'" class="flex items-start space-x-2">
-                  <div class="h-6 w-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                    <BotIcon class="h-4 w-4 text-green-600" />
+                  <div 
+                    :class="[
+                      'h-6 w-6 rounded-full flex items-center justify-center flex-shrink-0 mt-1',
+                      message.isError ? 'bg-red-200' : message.isInfo ? 'bg-blue-200' : 'bg-green-100'
+                    ]"
+                  >
+                    <BotIcon 
+                      :class="[
+                        'h-4 w-4',
+                        message.isError ? 'text-red-600' : message.isInfo ? 'text-blue-600' : 'text-green-600'
+                      ]" 
+                    />
                   </div>
                   <div class="flex-1">
                     <p class="text-sm">{{ message.content }}</p>
-                    <p class="text-xs text-gray-500 mt-1">{{ message.timestamp }}</p>
+                    
+                    <!-- Show sources if available -->
+                    <div v-if="message.hasSources && message.sources && message.sources.length > 0" class="mt-2">
+                      <p class="text-xs text-gray-600 mb-1">Sources:</p>
+                      <div class="flex flex-wrap gap-1">
+                        <span 
+                          v-for="source in message.sources" 
+                          :key="source"
+                          class="bg-green-200 text-green-800 px-2 py-1 rounded-full text-xs"
+                        >
+                          {{ source }}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <!-- Show confidence score -->
+                    <div v-if="message.confidence !== undefined" class="mt-2">
+                      <div class="flex items-center space-x-2">
+                        <span class="text-xs text-gray-600">Confidence:</span>
+                        <div class="flex-1 bg-gray-200 rounded-full h-1.5">
+                          <div 
+                            class="bg-green-500 h-1.5 rounded-full transition-all duration-300"
+                            :style="{ width: `${message.confidence * 100}%` }"
+                          ></div>
+                        </div>
+                        <span class="text-xs text-gray-600">{{ Math.round(message.confidence * 100) }}%</span>
+                      </div>
+                    </div>
+                    
+                    <p class="text-xs text-gray-500 mt-2">{{ message.timestamp }}</p>
                   </div>
                 </div>
                 <div v-else>
@@ -629,10 +673,87 @@
       </div>
     </div>
   </div>
+
+  <!-- Document Viewer Modal -->
+  <div v-if="showDocumentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-5/6 flex flex-col">
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between p-6 border-b border-gray-200">
+        <div class="flex items-center">
+          <div 
+            :class="[
+              'h-10 w-10 rounded-lg flex items-center justify-center mr-3',
+              getDocumentTypeColor(selectedDocument?.file_type)
+            ]"
+          >
+            <FileTextIcon class="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900">{{ selectedDocument?.title }}</h2>
+            <p class="text-sm text-gray-600">{{ selectedDocument?.category }}</p>
+          </div>
+        </div>
+        <button 
+          @click="closeDocumentModal" 
+          class="text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <XIcon class="h-6 w-6" />
+        </button>
+      </div>
+      
+      <!-- Modal Content -->
+      <div class="flex-1 p-6 overflow-hidden">
+        <div v-if="selectedDocument?.file_url" class="h-full">
+          <!-- PDF Viewer -->
+          <iframe 
+            v-if="selectedDocument.file_type === '.pdf'"
+            :src="selectedDocument.file_url"
+            class="w-full h-full border-0 rounded-lg"
+            title="Document Viewer"
+          ></iframe>
+          
+          <!-- Image Viewer -->
+          <div v-else-if="['.jpg', '.jpeg', '.png'].includes(selectedDocument.file_type)" class="h-full flex items-center justify-center">
+            <img 
+              :src="selectedDocument.file_url" 
+              :alt="selectedDocument.title"
+              class="max-w-full max-h-full object-contain rounded-lg"
+            />
+          </div>
+          
+          <!-- Other file types - show download link -->
+          <div v-else class="h-full flex items-center justify-center">
+            <div class="text-center">
+              <FileTextIcon class="h-16 w-16 text-gray-400 mx-auto mb-4" />
+              <h3 class="text-lg font-semibold text-gray-900 mb-2">Document Preview Not Available</h3>
+              <p class="text-gray-600 mb-4">This file type cannot be previewed in the browser.</p>
+              <a 
+                :href="selectedDocument.file_url" 
+                target="_blank"
+                class="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+              >
+                Download Document
+              </a>
+            </div>
+          </div>
+        </div>
+        
+        <div v-else class="h-full flex items-center justify-center">
+          <div class="text-center">
+            <FileTextIcon class="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Document Not Available</h3>
+            <p class="text-gray-600">The document file could not be loaded.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed, nextTick, onMounted } from 'vue'
+import { supabase } from '../lib/supabase'
+import { DocumentService } from '../services/documentService'
 import {
   GraduationCapIcon,
   BookOpenIcon,
@@ -655,12 +776,16 @@ import {
   ListIcon,
   ClockIcon,
   EyeIcon,
-  InfoIcon
+  InfoIcon,
+  XIcon
 } from 'lucide-vue-next'
 
 // User and company data
-const userName = ref('Sarah Johnson')
-const userInitials = computed(() => userName.value.split(' ').map(n => n[0]).join(''))
+const userName = ref('')
+const userInitials = computed(() => {
+  if (!userName.value) return ''
+  return userName.value.split(' ').map(n => n[0]).join('')
+})
 const companyName = ref('TechCorp Solutions')
 
 // Navigation state
@@ -673,84 +798,17 @@ const completedTasks = ref(8)
 const totalTasks = ref(12)
 const overallProgress = computed(() => Math.round((completedTasks.value / totalTasks.value) * 100))
 
-// Company documents (pre-uploaded by HR)
-const companyDocuments = ref([
-  {
-    id: 1,
-    name: 'Employee Handbook',
-    category: 'HR Policies',
-    description: 'Comprehensive guide to company policies, procedures, and employee benefits.',
-    type: 'PDF',
-    size: '2.4 MB',
-    pages: 45,
-    lastUpdated: '2 days ago',
-    analyzed: true,
-    uploadedBy: 'HR Team'
-  },
-  {
-    id: 2,
-    name: 'IT Security Guidelines',
-    category: 'IT & Security',
-    description: 'Security protocols, password policies, and data protection guidelines.',
-    type: 'PDF',
-    size: '1.8 MB',
-    pages: 28,
-    lastUpdated: '1 week ago',
-    analyzed: true,
-    uploadedBy: 'IT Department'
-  },
-  {
-    id: 3,
-    name: 'Benefits Enrollment Guide',
-    category: 'Benefits',
-    description: 'Complete guide to health insurance, retirement plans, and other benefits.',
-    type: 'PDF',
-    size: '3.2 MB',
-    pages: 52,
-    lastUpdated: '3 days ago',
-    analyzed: true,
-    uploadedBy: 'HR Team'
-  },
-  {
-    id: 4,
-    name: 'Remote Work Policy',
-    category: 'HR Policies',
-    description: 'Guidelines for remote work arrangements, equipment, and expectations.',
-    type: 'DOCX',
-    size: '0.8 MB',
-    pages: 12,
-    lastUpdated: '5 days ago',
-    analyzed: true,
-    uploadedBy: 'HR Team'
-  },
-  {
-    id: 5,
-    name: 'Code of Conduct',
-    category: 'Compliance',
-    description: 'Ethical guidelines, professional behavior standards, and compliance requirements.',
-    type: 'PDF',
-    size: '1.5 MB',
-    pages: 22,
-    lastUpdated: '1 week ago',
-    analyzed: true,
-    uploadedBy: 'Legal Team'
-  },
-  {
-    id: 6,
-    name: 'Emergency Procedures',
-    category: 'Safety',
-    description: 'Emergency evacuation plans, safety protocols, and contact information.',
-    type: 'PDF',
-    size: '1.2 MB',
-    pages: 18,
-    lastUpdated: '2 weeks ago',
-    analyzed: false,
-    uploadedBy: 'Facilities Team'
-  }
-])
+// Company documents (will be loaded from database)
+const companyDocuments = ref([])
+const isLoadingDocuments = ref(false)
+const documentError = ref('')
+
+// Document viewer modal
+const showDocumentModal = ref(false)
+const selectedDocument = ref(null)
 
 const analyzedDocuments = computed(() => 
-  companyDocuments.value.filter(doc => doc.analyzed).length
+  companyDocuments.value.filter(doc => doc.is_analyzed).length
 )
 
 // Document categories
@@ -838,15 +896,20 @@ const chatMessages = ref([
   {
     id: 1,
     sender: 'bot',
-    content: 'Hello! I\'m your AI assistant. I can help you understand company policies, procedures, and answer questions about the documents uploaded by HR. What would you like to know?',
-    timestamp: '10:30 AM'
+    content: 'Hello! I\'m your AI assistant. I can help you understand company policies, procedures, and answer questions about the documents uploaded by HR. I can read through your company documents and provide accurate answers based on the content. What would you like to know?',
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   }
 ])
 
 const quickSuggestions = ref([
   'What is the remote work policy?',
   'How much vacation time do I get?',
-  'What are the IT security requirements?'
+  'What are the IT security requirements?',
+  'Tell me about company benefits',
+  'What are the performance review procedures?',
+  'How does training and development work?',
+  'What is the dress code policy?',
+  'What are the working hours?'
 ])
 
 // Onboarding tasks
@@ -1019,14 +1082,7 @@ const setActiveSection = (section) => {
   dropdownOpen.value = null
 }
 
-const getDocumentTypeColor = (type) => {
-  const colors = {
-    'PDF': 'bg-red-500',
-    'DOCX': 'bg-blue-500',
-    'TXT': 'bg-gray-500'
-  }
-  return colors[type] || 'bg-gray-500'
-}
+
 
 const selectDocument = (document) => {
   if (document.analyzed && documentSummaries[document.id]) {
@@ -1035,8 +1091,20 @@ const selectDocument = (document) => {
 }
 
 const viewDocument = (document) => {
-  console.log('View document:', document.name)
-  // Open document viewer modal or new tab
+  console.log('View document:', document.title)
+  
+  // Check if document has a file URL
+  if (document.file_url) {
+    selectedDocument.value = document
+    showDocumentModal.value = true
+  } else {
+    alert('Document file not available')
+  }
+}
+
+const closeDocumentModal = () => {
+  showDocumentModal.value = false
+  selectedDocument.value = null
 }
 
 const viewSummary = (document) => {
@@ -1083,17 +1151,78 @@ const sendMessage = async () => {
     chatContainer.value.scrollTop = chatContainer.value.scrollHeight
   }
   
-  // Simulate AI response
+  // Send to AI service
   isTyping.value = true
-  setTimeout(() => {
+  
+  try {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+    if (!currentUser.id) {
+      throw new Error('User session not found')
+    }
+    
+    // Get job seeker's company assignment
+    const { data: jobSeekerProfile, error: profileError } = await supabase
+      .from('job_seeker_profiles')
+      .select('company_id, first_name, last_name')
+      .eq('user_id', currentUser.id)
+      .single()
+    
+    if (profileError || !jobSeekerProfile) {
+      throw new Error('Job seeker profile not found')
+    }
+    
+    if (!jobSeekerProfile.company_id) {
+      const noCompanyMessage = {
+        id: Date.now() + 1,
+        sender: 'bot',
+        content: "I can't access company documents yet because you haven't been assigned to a company. Once you're hired and assigned to a company, I'll be able to help you with questions about company policies and documents.",
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        isInfo: true
+      }
+      chatMessages.value.push(noCompanyMessage)
+      return
+    }
+    
+    // Get Supabase credentials
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || localStorage.getItem('supabaseUrl')
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || localStorage.getItem('supabaseKey')
+    
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Supabase credentials not found')
+    }
+    
+    // Send question to AI service
+    const response = await DocumentService.chatWithDocuments(
+      query,
+      jobSeekerProfile.company_id,
+      currentUser.id,
+      supabaseUrl,
+      supabaseKey
+    )
+    
     const botMessage = {
       id: Date.now() + 1,
       sender: 'bot',
-      content: generateBotResponse(query),
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      content: response.answer,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      confidence: response.confidence,
+      sources: response.sources,
+      hasSources: response.sources && response.sources.length > 0
     }
     
     chatMessages.value.push(botMessage)
+    
+  } catch (error) {
+    console.error('Error sending message:', error)
+    const errorMessage = {
+      id: Date.now() + 1,
+      sender: 'bot',
+      content: "I'm sorry, I couldn't process your question at the moment. Please make sure the document processing service is running and try again later.",
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isError: true
+    }
+    chatMessages.value.push(errorMessage)
+  } finally {
     isTyping.value = false
     
     // Scroll to bottom
@@ -1102,7 +1231,7 @@ const sendMessage = async () => {
         chatContainer.value.scrollTop = chatContainer.value.scrollHeight
       }
     })
-  }, 2000)
+  }
 }
 
 const generateBotResponse = (query) => {
@@ -1147,6 +1276,181 @@ const bookmarkDocument = () => {
     console.log('Bookmark document:', selectedDocumentSummary.value.title)
   }
 }
+
+// Load user profile data
+const loadUserProfile = async () => {
+  try {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+    
+    if (currentUser.id) {
+      const { data: profile, error } = await supabase
+        .from('job_seeker_profiles')
+        .select('first_name, last_name')
+        .eq('user_id', currentUser.id)
+        .single()
+      
+      if (!error && profile) {
+        userName.value = `${profile.first_name} ${profile.last_name}`.trim()
+      }
+    }
+  } catch (error) {
+    console.error('Error loading user profile:', error)
+  }
+}
+
+// Load company documents
+const loadCompanyDocuments = async () => {
+  try {
+    isLoadingDocuments.value = true
+    documentError.value = ''
+    
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+    if (!currentUser.id) {
+      throw new Error('User session not found')
+    }
+    
+    // Get job seeker profile to find which company they belong to
+    const { data: jobSeekerProfile, error: profileError } = await supabase
+      .from('job_seeker_profiles')
+      .select('company_id, first_name, last_name')
+      .eq('user_id', currentUser.id)
+      .single()
+    
+    if (profileError || !jobSeekerProfile) {
+      throw new Error('Job seeker profile not found')
+    }
+    
+    // Check if job seeker is assigned to a company
+    if (!jobSeekerProfile.company_id) {
+      documentError.value = 'You are not yet assigned to a company. Please wait for your hiring confirmation.'
+      companyDocuments.value = []
+      return
+    }
+    
+    // Get company name for display
+    const { data: companyProfile, error: companyError } = await supabase
+      .from('company_profiles')
+      .select('company_name')
+      .eq('id', jobSeekerProfile.company_id)
+      .single()
+    
+    if (companyError || !companyProfile) {
+      throw new Error('Company profile not found')
+    }
+    
+    // Update company name for display
+    companyName.value = companyProfile.company_name
+    
+    // Fetch documents directly from the database
+    const { data: documents, error: fetchError } = await supabase
+      .from('company_documents')
+      .select('*')
+      .eq('company_id', jobSeekerProfile.company_id)
+      .order('created_at', { ascending: false })
+    
+    if (fetchError) {
+      throw new Error(`Failed to fetch documents: ${fetchError.message}`)
+    }
+    
+    companyDocuments.value = documents || []
+    
+  } catch (error) {
+    console.error('Error loading company documents:', error)
+    documentError.value = error.message
+    companyDocuments.value = []
+  } finally {
+    isLoadingDocuments.value = false
+  }
+}
+
+// Helper functions
+const formatFileSize = (bytes) => {
+  if (!bytes) return 'Unknown size'
+  
+  const sizes = ['Bytes', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(1024))
+  return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i]
+}
+
+const formatDate = (dateString) => {
+  if (!dateString) return 'Unknown date'
+  
+  const date = new Date(dateString)
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  })
+}
+
+const getDocumentTypeColor = (type) => {
+  // Handle file extensions (e.g., '.pdf', '.docx')
+  const fileType = type ? type.replace('.', '').toUpperCase() : 'UNKNOWN'
+  const colors = { 
+    PDF: 'bg-red-500', 
+    DOCX: 'bg-blue-500', 
+    DOC: 'bg-blue-600',
+    TXT: 'bg-gray-500',
+    JPG: 'bg-green-500',
+    JPEG: 'bg-green-500',
+    PNG: 'bg-green-600'
+  }
+  return colors[fileType] || 'bg-gray-500'
+}
+
+// Load chat history for the user
+const loadChatHistory = async () => {
+  try {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+    if (!currentUser.id) return
+    
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || localStorage.getItem('supabaseUrl')
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || localStorage.getItem('supabaseKey')
+    
+    if (!supabaseUrl || !supabaseKey) return
+    
+    const history = await DocumentService.getChatHistory(currentUser.id, supabaseUrl, supabaseKey)
+    
+    if (history && history.history && history.history.length > 0) {
+      // Convert history to chat messages format
+      const historyMessages = history.history.map((item, index) => ({
+        id: `history-${index}`,
+        sender: 'user',
+        content: item.question,
+        timestamp: new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }))
+      
+      const botMessages = history.history.map((item, index) => ({
+        id: `history-bot-${index}`,
+        sender: 'bot',
+        content: item.answer,
+        timestamp: new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        confidence: item.confidence_score,
+        sources: item.source_documents,
+        hasSources: item.source_documents && item.source_documents.length > 0
+      }))
+      
+      // Interleave user and bot messages
+      const allMessages = []
+      for (let i = 0; i < Math.max(historyMessages.length, botMessages.length); i++) {
+        if (historyMessages[i]) allMessages.push(historyMessages[i])
+        if (botMessages[i]) allMessages.push(botMessages[i])
+      }
+      
+      // Add to existing messages (after the welcome message)
+      chatMessages.value.push(...allMessages)
+    }
+  } catch (error) {
+    console.error('Error loading chat history:', error)
+  }
+}
+
+// Load user profile when component mounts
+onMounted(async () => {
+  await loadUserProfile()
+  await loadCompanyDocuments()
+  await loadChatHistory()
+})
 </script>
 
 <style scoped>
