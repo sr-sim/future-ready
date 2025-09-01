@@ -294,6 +294,9 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { supabase } from '../lib/supabase'
+import { AIMatchingService } from '../services/aiMatchingService'
 import {
   SparklesIcon,
   ArrowLeftIcon,
@@ -308,8 +311,13 @@ import {
   TrendingUpIcon,
   EyeIcon
 } from 'lucide-vue-next'
-const userName = ref('Sarah Johnson')
-const userInitials = computed(() => userName.value.split(' ').map(n => n[0]).join(''))
+const router = useRouter()
+const userName = ref('')
+const userProfile = ref(null)
+const userInitials = computed(() => {
+  if (!userName.value) return ''
+  return userName.value.split(' ').map(n => n[0]).join('')
+})
 const currentPhase = ref('start') // 'start', 'matching', 'summary'
 const isMatching = ref(false)
 const matchingProgress = ref(0)
@@ -382,40 +390,99 @@ const goBack = () => {
 }
 
 const updateResume = () => {
-  // Navigate to resume update page
-  console.log('Navigate to resume update')
+  // Navigate to resume form page
+  router.push('/resume')
 }
 
 const startMatching = async () => {
-  isMatching.value = true
-  currentPhase.value = 'matching'
-  
-  // Simulate AI matching process
-  for (let i = 0; i < matchingSteps.value.length; i++) {
-    // Set current step as active
-    matchingSteps.value[i].active = true
+  try {
+    isMatching.value = true
+    currentPhase.value = 'matching'
     
-    // Simulate processing time
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    
-    // Complete current step
-    matchingSteps.value[i].completed = true
-    matchingSteps.value[i].active = false
-    
-    // Update progress
-    matchingProgress.value = ((i + 1) / matchingSteps.value.length) * 100
-  }
-  
-  // Show results summary
-  setTimeout(() => {
-    currentPhase.value = 'summary'
+    // Get current user
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+    if (!currentUser.id) {
+      throw new Error('User session not found. Please log in again.')
+    }
+
+    // Step 1: Analyzing Resume Content
+    matchingSteps.value[0].active = true
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    matchingSteps.value[0].completed = true
+    matchingSteps.value[0].active = false
+    matchingProgress.value = 25
+
+    // Step 2: Scoring Profile Strength
+    matchingSteps.value[1].active = true
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    matchingSteps.value[1].completed = true
+    matchingSteps.value[1].active = false
+    matchingProgress.value = 50
+
+    // Step 3: Matching with Companies
+    matchingSteps.value[2].active = true
+    const matchingResults = await AIMatchingService.performJobMatching(currentUser.id, 20)
+    matchingSteps.value[2].completed = true
+    matchingSteps.value[2].active = false
+    matchingProgress.value = 75
+
+    // Step 4: Ranking Results
+    matchingSteps.value[3].active = true
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    matchingSteps.value[3].completed = true
+    matchingSteps.value[3].active = false
+    matchingProgress.value = 100
+
+    // Calculate resume score
+    const resumeScoreValue = AIMatchingService.calculateResumeScore(matchingResults.profile)
+    const suggestions = AIMatchingService.generateImprovementSuggestions(matchingResults.profile)
+
+    // Update resume score
+    resumeScore.value = {
+      overall: resumeScoreValue,
+      skills: Math.round(resumeScoreValue * 0.9),
+      experience: Math.round(resumeScoreValue * 0.95),
+      presentation: Math.round(resumeScoreValue * 0.85),
+      suggestions: suggestions
+    }
+
+    // Update matching results
+    matchingResults.value = {
+      totalMatches: matchingResults.totalMatches,
+      highMatches: matchingResults.highMatches,
+      averageScore: matchingResults.averageScore
+    }
+
+    // Save results to localStorage for the results page
+    localStorage.setItem('aiMatchingResults', JSON.stringify({
+      profile: matchingResults.profile,
+      matches: matchingResults.matches,
+      resumeScore: resumeScore.value,
+      matchingResults: matchingResults.value,
+      timestamp: new Date().toISOString()
+    }))
+
+    // Mark matching as completed
+    localStorage.setItem('aiMatchingCompleted', 'true')
+
+    // Show results summary
+    setTimeout(() => {
+      currentPhase.value = 'summary'
+      isMatching.value = false
+    }, 1000)
+
+  } catch (error) {
+    console.error('Error during AI matching:', error)
     isMatching.value = false
-  }, 1000)
+    currentPhase.value = 'start'
+    // You could show an error message to the user here
+    alert('Error during AI matching. Please try again.')
+  }
 }
 
 const viewResults = () => {
   // Navigate to results page
-  window.location.href = '/matchedresult'
+  router.push('/matchedresult')
 }
 
 const getScoreColor = (score) => {
@@ -424,6 +491,50 @@ const getScoreColor = (score) => {
   if (score >= 40) return '#f59e0b' // yellow
   return '#ef4444' // red
 }
+
+// Load user profile data
+const loadUserProfile = async () => {
+  try {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+    if (!currentUser.id) {
+      console.error('No user ID found')
+      return
+    }
+
+    const { data: profile, error } = await supabase
+      .from('job_seeker_profiles')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .single()
+
+    if (error) {
+      console.error('Error fetching user profile:', error)
+      return
+    }
+
+    if (profile) {
+      userProfile.value = profile
+      userName.value = `${profile.first_name} ${profile.last_name}`
+      
+      // Update resume stats based on actual data
+      resumeStats.value = {
+        experience: profile.experience && Array.isArray(profile.experience) ? `${profile.experience.length}+` : '0+',
+        skills: profile.skills && Array.isArray(profile.skills) ? profile.skills.length : 0,
+        education: profile.education && Array.isArray(profile.education) ? profile.education.length : 0
+      }
+      
+      // Update last resume update
+      lastResumeUpdate.value = profile.updated_at ? 
+        new Date(profile.updated_at).toLocaleDateString() : 'Never'
+    }
+  } catch (error) {
+    console.error('Error loading user profile:', error)
+  }
+}
+
+onMounted(() => {
+  loadUserProfile()
+})
 </script>
 
 <style scoped>
