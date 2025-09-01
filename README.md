@@ -1,6 +1,8 @@
 # future-ready
 ## Project-title: KLMMS Talent Pool System
+Pitch Deck: https://drive.google.com/file/d/1Y0EdBQ3ItyajEruCEUTELZqwZPeyNL-l/view?usp=sharing
 
+Demo Video: https://www.youtube.com/watch?v=OFI4wRRKqbw
 ## Team member:
 1. Kelvin Chin Vui Hung
 2. Sim Soo Ruan
@@ -21,35 +23,41 @@
 - Onboard guideline step by step from Overview (Culture, department), Project/Product, Techstack(skill needed), Job scope based on role
 
 ## Technology Stack Used
-Frontend:
+### Frontend:
 - Vue.js 3 (Single File Components, <script setup>)
 - Vite (for fast development/build)
 - TypeScript (see .ts files and config)
 - Tailwind CSS (see tailwind.config.js and utility classes)
 
-Backend/Server Scripts: 
+### Backend/Server Scripts: 
 - Node.js & Supabase(PostgreSQL) for backend database
 
-Middleware:
+### Middleware:
 - Express.js
 
-Database: 
-Supabase (PostgreSQL) is used to store job postings, applicant profiles, and their embeddings.
+### Database: 
+- Supabase (PostgreSQL) (to store job postings, applicant profiles, and their embeddings)
 
-AI Model: 
-- Resume Matching algorithm: Uses the bge-small-en-v1.5 for feature extraction and semantic matching.
-- Chatbot: Xenova/distilbert-base-uncased-distilled-squad/DistilBERT SQuAD (Question & Answering model） and all-MiniLM-L6-v2 (RAG)
+### AI Model: 
+- **Resume Matching algorithm:** bge-small-en-v1.5
+- **Document Summarizing:** flan-t5-base
+- Chatbot:
+  - **Question & Answering model:** Xenova/distilbert-base-uncased-distilled-squad/DistilBERT SQuAD
+  - **Retrieval-Augmented Generation(RAG):** all-MiniLM-L6-v2 
+  
 ## Setup Instructions
 1. Clone Github repos 
 2. Run command below.
 > npm install
 > 
 > npm install @supabase/supabase-js
+>
+> npm install concurrently
 > 
-> npm run dev
+> npm run dev:full
 3. Ctrl + click the local link
 
-![Click Link example](/code/public/Local Link example.png)
+![Click Link example](code/public/Local Link example.png)
 
 ## Reflection on Challenges and Learning
 Throughout this project, we encountered several obstacles and challenges that pushed us out of our comfort zone and helped us grow. 
