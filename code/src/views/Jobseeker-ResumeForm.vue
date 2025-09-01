@@ -612,6 +612,13 @@ const showMatching = ref(false)
 const showValidationError = ref(false)
 const validationMessage = ref('')
 
+// User data
+const userName = ref('')
+const userInitials = computed(() => {
+  if (!userName.value) return ''
+  return userName.value.split(' ').map(n => n[0]).join('')
+})
+
 const formData = ref({
   personalInfo: {
     fullName: '',
@@ -1025,8 +1032,32 @@ const generateEmbeddings = async (profileId) => {
   }
 }
 
+// Load user profile data
+const loadUserProfile = async () => {
+  try {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+    
+    if (currentUser.id) {
+      const { data: profile, error } = await supabase
+        .from('job_seeker_profiles')
+        .select('first_name, last_name')
+        .eq('user_id', currentUser.id)
+        .single()
+      
+      if (!error && profile) {
+        userName.value = `${profile.first_name} ${profile.last_name}`.trim()
+      }
+    }
+  } catch (error) {
+    console.error('Error loading user profile:', error)
+  }
+}
+
 // Auto-load existing resume data when component mounts
 onMounted(async () => {
+  // Load user profile first
+  await loadUserProfile()
+  
   try {
     const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
     
