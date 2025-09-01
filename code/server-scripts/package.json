@@ -7,17 +7,32 @@
   "scripts": {
     "start": "node embedding-api.js",
     "start:simple": "node embedding-api-simple.js",
+    "start:job-matching": "node job-matching-api.js",
+    "start:enhanced-qa": "node enhanced-document-qa-api.js",
+
     "generate": "node generate-embeddings.js",
+    "document-qa": "node document-qa-api.js",
     "dev": "nodemon embedding-api.js",
-    "dev:simple": "nodemon embedding-api-simple.js"
+    "dev:simple": "nodemon embedding-api-simple.js",
+    "dev:job-matching": "nodemon job-matching-api.js",
+
+    "dev:document-qa": "nodemon document-qa-api.js",
+    "dev:enhanced-qa": "nodemon enhanced-document-qa-api.js",
+    "dev:full": "concurrently \"npm run dev:job-matching\" \"npm run dev:document-qa\" \"npm run dev:enhanced-qa\" \"npm run dev\"",
+    "dev:ai": "concurrently \"npm run dev:job-matching\" \"npm run dev:document-qa\" \"npm run dev:enhanced-qa\""
   },
   "dependencies": {
-    "express": "^4.18.2",
+    "@supabase/supabase-js": "^2.38.0",
+    "@xenova/transformers": "^2.6.0",
     "cors": "^2.8.5",
-    "@xenova/transformers": "^2.15.0",
-    "@supabase/supabase-js": "^2.39.0"
+    "dotenv": "^17.2.1",
+    "express": "^4.18.2",
+    "multer": "^1.4.5-lts.1",
+    "pdf-parse": "^1.1.1",
+    "pdf-parser": "^1.0.5"
   },
   "devDependencies": {
+    "concurrently": "^7.6.0",
     "nodemon": "^3.0.2"
   },
   "keywords": [

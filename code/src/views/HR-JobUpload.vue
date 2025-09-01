@@ -748,6 +748,7 @@ import {
   AlertTriangleIcon,
   CheckIcon
 } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
 
 // User data
 const userName = ref('John Smith')
@@ -1239,20 +1240,11 @@ const deleteJob = async () => {
   jobToDelete.value = null
 }
 
+const router = useRouter()
+
 const redirectToJobResults = (jobId) => {
-  // Close the dropdown
   activeDropdowns.value.aiMatch = null
-  
-  // Navigate to the JobResults page with the selected job
-  // In a real Vue Router setup, this would be:
-  // router.push({ name: 'JobResults', params: { jobId } })
-  
-  // For demonstration, we'll simulate the navigation
-  console.log(`Navigating to detailed results for job ${jobId}`)
-  
-  // You can replace this with actual router navigation:
-  // window.location.href = `/job-results/${jobId}`
-  // or use Vue Router: router.push(`/job-results/${jobId}`)
+  router.push({ name: 'results', params: { jobId } })
 }
 
 // HR AI matching functionality

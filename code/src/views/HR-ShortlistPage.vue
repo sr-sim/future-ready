@@ -319,6 +319,8 @@
 
 <script setup>
 import { ref, reactive, computed } from 'vue'
+import { supabase } from '../lib/supabase'
+import { JobSeekerService } from '../services/jobSeekerService'
 import { 
   StarIcon, 
   LogOutIcon, 
@@ -592,15 +594,47 @@ const closeResultModal = () => {
 }
 
 const sendResultEmail = async () => {
-  isSendingEmail.value = true
-  await new Promise(resolve => setTimeout(resolve, 2000))
-  alert('Result email sent!')
-  // Update candidate status
-  const candidate = shortlistedCandidates.value.find(c => c.id === currentResultTargetId.value)
-  if (candidate) {
-    candidate.status = resultForm.action === 'approve' ? 'approved' : 'rejected'
+  try {
+    isSendingEmail.value = true
+    
+    // Simulate email sending
+    await new Promise(resolve => setTimeout(resolve, 2000))
+    
+    // Update candidate status
+    const candidate = shortlistedCandidates.value.find(c => c.id === currentResultTargetId.value)
+    if (candidate) {
+      candidate.status = resultForm.action === 'approve' ? 'approved' : 'rejected'
+      
+      // If approved, assign job seeker to company
+      if (resultForm.action === 'approve') {
+        try {
+          // Get current user's company ID
+          const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+          const { data: companyProfile } = await supabase
+            .from('company_profiles')
+            .select('id')
+            .eq('user_id', currentUser.id)
+            .single()
+          
+          if (companyProfile) {
+            // Assign job seeker to company
+            await JobSeekerService.assignToCompany(candidate.id, companyProfile.id)
+            alert('Candidate approved and assigned to company! They can now access company documents.')
+          }
+        } catch (error) {
+          console.error('Error assigning candidate to company:', error)
+          alert('Email sent, but there was an issue assigning the candidate to the company.')
+        }
+      }
+    }
+    
+    alert('Result email sent!')
+  } catch (error) {
+    console.error('Error sending result email:', error)
+    alert('Error sending email. Please try again.')
+  } finally {
+    isSendingEmail.value = false
+    closeResultModal()
   }
-  isSendingEmail.value = false
-  closeResultModal()
 }
 </script>
