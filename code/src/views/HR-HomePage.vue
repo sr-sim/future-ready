@@ -40,7 +40,7 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
           <div class="flex items-center justify-between mb-4">
             <div class="h-12 w-12 bg-gradient-to-r from-green-400 to-emerald-500 rounded-xl flex items-center justify-center">
@@ -63,16 +63,6 @@
           <p class="text-gray-600 text-sm">Shortlisted</p>
         </div>
 
-        <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
-          <div class="flex items-center justify-between mb-4">
-            <div class="h-12 w-12 bg-gradient-to-r from-purple-400 to-purple-500 rounded-xl flex items-center justify-center">
-              <CalendarIcon class="h-6 w-6 text-white" />
-            </div>
-            <span class="text-purple-600 text-sm font-medium bg-purple-100 px-2 py-1 rounded-full">+5%</span>
-          </div>
-          <h3 class="text-2xl font-bold text-gray-900 mb-1">{{ stats.interviews }}</h3>
-          <p class="text-gray-600 text-sm">Interviews Scheduled</p>
-        </div>
 
         <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
           <div class="flex items-center justify-between mb-4">
