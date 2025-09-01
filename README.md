@@ -46,9 +46,14 @@ Demo Video: https://www.youtube.com/watch?v=OFI4wRRKqbw
   - **Retrieval-Augmented Generation(RAG):** all-MiniLM-L6-v2 
   
 ## Setup Instructions
-1. Clone Github repos to code editor
-2. Open terminal, the terminal will show path like (C:\Users\user\source\repos >)
-3. Run command below
+1. Clone Github repos to code editor such as visual studio code
+2. Ensure the device support Node Package Manager (npm)
+
+If not, install Node.js.
+
+Guide: https://docs.npmjs.com/downloading-and-installing-node-js-and-npm
+4. Open terminal, the terminal will show path like (C:\Users\user\source\repos >)
+5. Run command below
 > cd future-ready
 > 
 > cd code
