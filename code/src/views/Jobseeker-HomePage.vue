@@ -87,7 +87,7 @@
       </div>
 
       <!-- Quick Stats -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
           <div class="flex items-center justify-between">
             <div>
@@ -121,18 +121,7 @@
           <p class="text-xs text-gray-500 mt-2">{{ newApplicationsThisWeek }} this week</p>
         </div>
 
-        <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-gray-600">Interview Invites</p>
-              <p class="text-2xl font-bold text-gray-900">{{ interviewInvites }}</p>
-            </div>
-            <div class="h-12 w-12 bg-purple-100 rounded-xl flex items-center justify-center">
-              <CalendarIcon class="h-6 w-6 text-purple-600" />
-            </div>
-          </div>
-          <p class="text-xs text-gray-500 mt-2">{{ upcomingInterviews }} upcoming</p>
-        </div>
+
 
         <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
           <div class="flex items-center justify-between">
@@ -302,13 +291,6 @@
                 <FileTextIcon class="h-5 w-5 mr-2" />
                 My Applications
               </button>
-              <button 
-                @click="navigateToInterviews"
-                class="w-full bg-gradient-to-r from-orange-600 to-red-600 text-white p-3 rounded-xl font-semibold hover:from-orange-700 hover:to-red-700 transition-all flex items-center justify-center"
-              >
-                <CalendarIcon class="h-5 w-5 mr-2" />
-                Interviews
-              </button>
             </div>
           </div>
 
@@ -455,8 +437,6 @@ onMounted(() => {
 const profileCompletion = ref(85)
 const applicationsSent = ref(12)
 const newApplicationsThisWeek = ref(3)
-const interviewInvites = ref(4)
-const upcomingInterviews = ref(2)
 const jobMatches = ref(28)
 const newMatchesToday = ref(5)
 
@@ -507,13 +487,6 @@ const recentApplications = ref([
     appliedDate: '2 days ago'
   },
   {
-    id: 2,
-    jobTitle: 'Frontend Engineer',
-    company: 'StartupX',
-    status: 'Interview Scheduled',
-    appliedDate: '5 days ago'
-  },
-  {
     id: 3,
     jobTitle: 'Web Developer',
     company: 'WebSolutions',
@@ -537,11 +510,6 @@ const careerTips = ref([
     description: 'Keep your profile updated with latest skills and achievements to attract recruiters.'
   },
   {
-    id: 2,
-    title: 'Practice Technical Interviews',
-    description: 'Regular coding practice helps you stay sharp for technical assessments.'
-  },
-  {
     id: 3,
     title: 'Network Actively',
     description: 'Attend industry events and connect with professionals in your field.'
@@ -555,12 +523,6 @@ const careerTips = ref([
 
 // Upcoming events data
 const upcomingEvents = ref([
-  {
-    id: 1,
-    title: 'Technical Interview - TechCorp',
-    date: 'Tomorrow, 2:00 PM',
-    type: 'Interview'
-  },
   {
     id: 2,
     title: 'JavaScript Meetup',
@@ -616,10 +578,6 @@ const navigateToApplications = () => {
   // router.push('/applications')
 }
 
-const navigateToInterviews = () => {
-  console.log('Navigate to interviews')
-  // router.push('/interviews')
-}
 
 const viewJobDetails = (jobId) => {
   console.log('View job details:', jobId)

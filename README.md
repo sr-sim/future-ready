@@ -2,7 +2,7 @@
 ## Project-title: KLMMS Talent Pool System
 
 ## Team member:
-1. Kelvin Chin Wei Hong
+1. Kelvin Chin Vui Hung
 2. Sim Soo Ruan
 3. Yap Jin Tin
 4. Saw Khoo Mei Huey
@@ -30,7 +30,9 @@
 1. Clone Github repos 
 2. Run command below.
 > npm install
+> 
 > npm install @supabase/supabase-js
+> 
 > npm run dev
 3. Ctrl + click the local link
 
