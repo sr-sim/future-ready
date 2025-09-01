@@ -60,50 +60,72 @@ export class AIMatchingService {
     }
   }
 
-  // Perform AI job matching using vector similarity
+  // Perform AI job matching using the backend API
   static async performJobMatching(userId, limit = 20) {
     try {
-      // Get user's job seeker profile
-      const { data: profile, error: profileError } = await supabase
-        .from('job_seeker_profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .single()
+      // Call the job matching API endpoint
+      const response = await fetch('http://localhost:3002/api/job-matching', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId, limit })
+      })
 
-      if (profileError) throw profileError
-      if (!profile) throw new Error('Job seeker profile not found')
-
-      // Generate embedding if not exists
-      if (!profile.embedding) {
-        const embedding = await this.generateJobSeekerEmbedding(profile)
-        await this.updateJobSeekerEmbedding(profile.id, embedding)
-        profile.embedding = embedding
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to perform job matching')
       }
 
-      // Perform vector similarity search for job postings
-      const { data: jobMatches, error: matchError } = await supabase
-        .rpc('match_jobs_with_profile', {
-          profile_embedding: profile.embedding,
-          match_limit: limit
-        })
-
-      if (matchError) throw matchError
-
-      // Process and format the results
-      const formattedMatches = await this.formatJobMatches(jobMatches, profile)
-      
-      return {
-        profile,
-        matches: formattedMatches,
-        totalMatches: formattedMatches.length,
-        highMatches: formattedMatches.filter(match => match.matchScore >= 80).length,
-        averageScore: formattedMatches.length > 0 
-          ? Math.round(formattedMatches.reduce((sum, match) => sum + match.matchScore, 0) / formattedMatches.length)
-          : 0
-      }
+      const result = await response.json()
+      return result
 
     } catch (error) {
       console.error('Error performing job matching:', error)
+      throw error
+    }
+  }
+
+  // Get saved job matches for a user
+  static async getSavedJobMatches(userId, limit = 20, minScore = 0) {
+    try {
+      const response = await fetch(`http://localhost:3002/api/job-matches/${userId}?limit=${limit}&minScore=${minScore}`)
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to fetch job matches')
+      }
+
+      const result = await response.json()
+      return result
+
+    } catch (error) {
+      console.error('Error fetching saved job matches:', error)
+      throw error
+    }
+  }
+
+  // Update match status (viewed, interested, applied)
+  static async updateMatchStatus(matchId, status) {
+    try {
+      const response = await fetch(`http://localhost:3002/api/job-matches/${matchId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(status)
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update match status')
+      }
+
+      const result = await response.json()
+      return result
+
+    } catch (error) {
+      console.error('Error updating match status:', error)
       throw error
     }
   }

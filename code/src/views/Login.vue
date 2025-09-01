@@ -835,27 +835,16 @@ const handleSignUp = async () => {
         user_id: createdUser.id,
         company_name: formData.value.companyName,
         industry: formData.value.industry.toUpperCase(),
-        company_size: formData.value.companySize,
         website: formData.value.website || null,
         contact_email: formData.value.email,
-        contact_phone: null, // Can be added later
         address: formData.value.companyAddress,
-        city: null, // Can be parsed from address later
-        state: null, // Can be parsed from address later
-        country: null, // Can be parsed from address later
-        postal_code: null, // Can be parsed from address later
-        founded_year: null, // Can be added later
-        employee_count: null, // Can be added later
-        company_type: null, // Can be added later
-        logo: null, // Can be added later
+        // Only include company_size if the field exists in the table
+        ...(formData.value.companySize && { company_size: formData.value.companySize }),
+        // Set default values for required fields
         subscription_plan: 'FREE',
-        subscription_expiry: null,
-        features_enabled: null,
         auto_screening: true,
         email_notifications: true,
-        sms_notifications: false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        sms_notifications: false
       }
 
       const { error: profileError } = await supabase
