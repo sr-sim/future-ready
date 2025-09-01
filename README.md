@@ -21,15 +21,27 @@
 - Onboard guideline step by step from Overview (Culture, department), Project/Product, Techstack(skill needed), Job scope based on role
 
 ## Technology Stack Used
-- Frontend:
-  - Vue.js 3 (Single File Components, <script setup>)
-  - Vite (for fast development/build)
-  - TypeScript (see .ts files and config)
-  - Tailwind CSS (see tailwind.config.js and utility classes)
--	Backend/Server Scripts: Node.js, using Supabase as a backend database.
--	AI Model: Uses the bge-small-en-v1.5 for feature extraction and semantic matching.
--	Database: Supabase (PostgreSQL) is used to store job postings, applicant profiles, and their embeddings.
+Frontend:
+- Vue.js 3 (Single File Components, <script setup>)
+- Vite (for fast development/build)
+- TypeScript (see .ts files and config)
+- Tailwind CSS (see tailwind.config.js and utility classes)
 
+Backend/Server Scripts: 
+- Node.js & Supabase(PostgreSQL) for backend database
+
+Middleware:
+- Express.js
+
+AI Model: 
+- Resume Matching algorithm: Uses the bge-small-en-v1.5 for feature extraction and semantic matching.
+
+Chatbot: 
+- Question & Answering model: Xenova/distilbert-base-uncased-distilled-squad OR DistilBERT SQuAD
+- RAG: all-MiniLM-L6-v2
+
+Database: 
+Supabase (PostgreSQL) is used to store job postings, applicant profiles, and their embeddings.
 ## Setup Instructions
 1. Clone Github repos 
 2. Run command below.
