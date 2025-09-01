@@ -52,6 +52,7 @@ Demo Video: https://www.youtube.com/watch?v=OFI4wRRKqbw
 If not, install Node.js.
 
 Guide: https://docs.npmjs.com/downloading-and-installing-node-js-and-npm
+
 4. Open terminal, the terminal will show path like (C:\Users\user\source\repos >)
 5. Run command below
 > cd future-ready
