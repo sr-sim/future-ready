@@ -40,7 +40,7 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
           <div class="flex items-center justify-between mb-4">
             <div class="h-12 w-12 bg-gradient-to-r from-green-400 to-emerald-500 rounded-xl flex items-center justify-center">
@@ -63,16 +63,6 @@
           <p class="text-gray-600 text-sm">Shortlisted</p>
         </div>
 
-        <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
-          <div class="flex items-center justify-between mb-4">
-            <div class="h-12 w-12 bg-gradient-to-r from-purple-400 to-purple-500 rounded-xl flex items-center justify-center">
-              <CalendarIcon class="h-6 w-6 text-white" />
-            </div>
-            <span class="text-purple-600 text-sm font-medium bg-purple-100 px-2 py-1 rounded-full">+5%</span>
-          </div>
-          <h3 class="text-2xl font-bold text-gray-900 mb-1">{{ stats.interviews }}</h3>
-          <p class="text-gray-600 text-sm">Interviews Scheduled</p>
-        </div>
 
         <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
           <div class="flex items-center justify-between mb-4">
@@ -126,19 +116,6 @@
               </div>
             </div>
             <div class="p-6 space-y-3">
-              <router-link
-                to="/upload"
-                class="flex items-center p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl hover:from-blue-100 hover:to-indigo-100 transition-all duration-200 group"
-              >
-                <div class="h-10 w-10 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center mr-4">
-                  <UploadCloudIcon class="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <p class="text-sm font-semibold text-gray-900 group-hover:text-blue-700">Upload Resumes</p>
-                  <p class="text-xs text-gray-500">Add new candidates</p>
-                </div>
-                <ChevronRightIcon class="h-4 w-4 text-gray-400 ml-auto group-hover:text-blue-500" />
-              </router-link>
 
               <router-link
                 to="/ranking"
@@ -212,14 +189,6 @@ const recentActivities = ref([
     time: '2 min ago',
     icon: UserIcon,
     iconBg: 'bg-gradient-to-r from-blue-500 to-indigo-500'
-  },
-  {
-    id: 2,
-    title: 'Interview scheduled',
-    description: 'Michael Chen - Frontend Engineer interview at 2:00 PM',
-    time: '15 min ago',
-    icon: CalendarIcon,
-    iconBg: 'bg-gradient-to-r from-green-500 to-emerald-500'
   },
   {
     id: 3,

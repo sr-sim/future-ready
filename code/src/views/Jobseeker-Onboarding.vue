@@ -438,7 +438,7 @@
                 <BotIcon class="h-6 w-6 mr-3" />
                 <div>
                   <h3 class="text-xl font-bold">AI Assistant</h3>
-                  <p class="text-green-100 text-sm">Powered by Mistral 7B & Google LLaMa</p>
+                  <p class="text-green-100 text-sm">Powered by Google LLaMa</p>
                 </div>
               </div>
               <div class="flex items-center space-x-2">
