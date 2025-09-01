@@ -33,15 +33,12 @@ Backend/Server Scripts:
 Middleware:
 - Express.js
 
-AI Model: 
-- Resume Matching algorithm: Uses the bge-small-en-v1.5 for feature extraction and semantic matching.
-
-Chatbot: 
-- Question & Answering model: Xenova/distilbert-base-uncased-distilled-squad OR DistilBERT SQuAD
-- RAG: all-MiniLM-L6-v2
-
 Database: 
 Supabase (PostgreSQL) is used to store job postings, applicant profiles, and their embeddings.
+
+AI Model: 
+- Resume Matching algorithm: Uses the bge-small-en-v1.5 for feature extraction and semantic matching.
+- Chatbot: Xenova/distilbert-base-uncased-distilled-squad/DistilBERT SQuAD (Question & Answering model） and all-MiniLM-L6-v2 (RAG)
 ## Setup Instructions
 1. Clone Github repos 
 2. Run command below.
