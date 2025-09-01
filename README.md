@@ -57,7 +57,7 @@ Demo Video: https://www.youtube.com/watch?v=OFI4wRRKqbw
 > npm run dev:full
 3. Ctrl + click the local link
 
-![Click Link example](code/public/Local Link example.png)
+![Click Link example](../code/public/Local Link example.png)
 
 ## Reflection on Challenges and Learning
 Throughout this project, we encountered several obstacles and challenges that pushed us out of our comfort zone and helped us grow. 
