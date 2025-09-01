@@ -30,7 +30,9 @@
 1. Clone Github repos 
 2. Run command below.
 > npm install
+> 
 > npm install @supabase/supabase-js
+> 
 > npm run dev
 3. Ctrl + click the local link
 
