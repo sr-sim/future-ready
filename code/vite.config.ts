@@ -60,6 +60,12 @@ export default defineConfig({
         changeOrigin: true,
         secure: false
       },
+      // Enhanced Document QA API endpoints
+      '/api/enhanced-chat': {
+        target: 'http://localhost:3008',
+        changeOrigin: true,
+        secure: false
+      },
       // Health check endpoints
       '/health': {
         target: 'http://localhost:3006',
