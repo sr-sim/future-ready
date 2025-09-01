@@ -53,8 +53,8 @@ If not, install Node.js.
 
 Guide: https://docs.npmjs.com/downloading-and-installing-node-js-and-npm
 
-4. Open terminal, the terminal will show path like (C:\Users\user\source\repos >)
-5. Run command below
+3. Open terminal, the terminal will show path like (C:\Users\user\source\repos >)
+4. Run command below
 > cd future-ready
 > 
 > cd code
@@ -66,7 +66,7 @@ Guide: https://docs.npmjs.com/downloading-and-installing-node-js-and-npm
 > npm install concurrently
 > 
 > npm run dev:full
-3. Ctrl + click the local link
+5. Ctrl + click the local link
 
 ![Click Link example](code/public/LocalLinkexample.png)
 
