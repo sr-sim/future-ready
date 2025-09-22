@@ -16,9 +16,8 @@
           
           <!-- Navigation Menu -->
           <nav class="hidden md:flex items-center space-x-8">
-            <div class="relative" @mouseleave="closeDropdown">
+            <div class="relative" @mouseenter="openDropdown('onboarding')" @mouseleave="closeDropdown">
               <button
-                @mouseenter="openDropdown('onboarding')"
                 @click="toggleDropdown('onboarding')"
                 :class="[
                   'flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors',
@@ -34,6 +33,7 @@
               
               <!-- Onboarding Dropdown -->
               <div
+              @mouseenter="openDropdown('onboarding')" @mouseleave="closeDropdown"
                 v-if="dropdownOpen === 'onboarding'"
                 class="absolute top-full left-0 mt-1 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
               >
@@ -1048,7 +1048,7 @@ const toggleDropdown = (menu) => {
 const closeDropdown = () => {
   setTimeout(() => {
     dropdownOpen.value = null
-  }, 150)
+  }, 200)
 }
 
 const setActiveSection = (section) => {
