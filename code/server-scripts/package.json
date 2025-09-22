@@ -8,25 +8,24 @@
     "start": "node embedding-api.js",
     "start:simple": "node embedding-api-simple.js",
     "start:job-matching": "node job-matching-api.js",
-    "start:enhanced-qa": "node enhanced-document-qa-api.js",
-
+    "start:enhanced-qa": "node document-summary-api.js",
     "generate": "node generate-embeddings.js",
     "document-qa": "node document-qa-api.js",
     "dev": "nodemon embedding-api.js",
     "dev:simple": "nodemon embedding-api-simple.js",
     "dev:job-matching": "nodemon job-matching-api.js",
-
     "dev:document-qa": "nodemon document-qa-api.js",
-    "dev:enhanced-qa": "nodemon enhanced-document-qa-api.js",
-    "dev:full": "concurrently \"npm run dev:job-matching\" \"npm run dev:document-qa\" \"npm run dev:enhanced-qa\" \"npm run dev\"",
+    "dev:enhanced-qa": "nodemon document-summary-api.js",
+    "dev:full": "concurrently -k -r -n job,doc,summary,embed -c green,cyan,magenta,blue \"npm run dev:job-matching\" \"npm run dev:document-qa\" \"npm run dev:enhanced-qa\" \"npm run dev\"",
     "dev:ai": "concurrently \"npm run dev:job-matching\" \"npm run dev:document-qa\" \"npm run dev:enhanced-qa\""
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.38.0",
-    "@xenova/transformers": "^2.6.0",
+    "@xenova/transformers": "^2.17.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^4.18.2",
+    "mammoth": "^1.11.0",
     "multer": "^1.4.5-lts.1",
     "pdf-parse": "^1.1.1",
     "pdf-parser": "^1.0.5"

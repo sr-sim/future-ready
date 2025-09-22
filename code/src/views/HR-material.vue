@@ -111,17 +111,22 @@
               <option value="TXT">TXT</option>
             </select>
           </div>
-          <div>
+          <div class="md:col-span-2">
             <label class="block text-sm font-medium text-gray-700 mb-2">File</label>
-            <label
-              class="flex items-center gap-2 cursor-pointer bg-blue-300 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-medium shadow transition"
-              for="material-upload"
-            >
-              <FileTextIcon class="h-5 w-5" />
-              <span>
-                {{ newDoc.file ? 'Change File' : 'Choose File' }}
-              </span>
-            </label>
+            <div class="flex items-center gap-3">
+              <label
+                class="flex items-center gap-2 cursor-pointer bg-blue-300 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-medium shadow transition"
+                for="material-upload"
+              >
+                <FileTextIcon class="h-5 w-5" />
+                <span>
+                  {{ newDoc.file ? 'Change File' : 'Choose File' }}
+                </span>
+              </label>
+              <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                Upload
+              </button>
+            </div>
             <input
               id="material-upload"
               name="document-file"
@@ -134,11 +139,6 @@
             <span v-if="newDoc.file" class="text-xs text-blue-600 mt-2 block font-medium">
               <FileTextIcon class="h-4 w-4 inline mr-1" /> Selected: {{ newDoc.file.name }}
             </span>
-          </div>
-          <div class="flex items-end">
-            <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors">
-              Upload
-            </button>
           </div>
         </form>
         <div v-if="uploadError" class="mt-4 text-red-600 text-sm font-medium">
@@ -192,20 +192,30 @@
               <a :href="doc.file_url" target="_blank" class="bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-1 rounded-lg text-xs font-medium">
                 <EyeIcon class="h-4 w-4 inline mr-1" /> View
               </a>
-              <button @click="markAnalyzed(doc)" :disabled="doc.is_analyzed" class="bg-green-50 hover:bg-green-100 text-green-700 px-3 py-1 rounded-lg text-xs font-medium disabled:opacity-50">
+              <button @click="markAnalyzed(doc)" :disabled="doc.is_analyzed || isLoadingDocuments || analyzingState[doc.id]" class="bg-green-50 hover:bg-green-100 text-green-700 px-3 py-1 rounded-lg text-xs font-medium disabled:opacity-50">
                 <SparklesIcon class="h-4 w-4 inline mr-1" /> Mark Analyzed
               </button>
-              <button @click="editDocument(doc)" class="bg-yellow-50 hover:bg-yellow-100 text-yellow-700 px-3 py-1 rounded-lg text-xs font-medium">
-                <FileTextIcon class="h-4 w-4 inline mr-1" /> Edit
+              <button @click="openEditSummary(doc)" class="bg-yellow-50 hover:bg-yellow-100 text-yellow-700 px-3 py-1 rounded-lg text-xs font-medium">
+                <FileTextIcon class="h-4 w-4 inline mr-1" /> View or Edit Summary
               </button>
               <button @click="deleteDocument(doc.id)" class="bg-red-50 hover:bg-red-100 text-red-700 px-3 py-1 rounded-lg text-xs font-medium">
                 <TrashIcon class="h-4 w-4 inline mr-1" /> Delete
               </button>
             </div>
-            <div v-if="doc.is_analyzed && doc.document_summaries && doc.document_summaries[0]" class="mt-3 bg-green-50 border border-green-200 rounded-lg p-3">
-              <h5 class="font-semibold text-green-700 mb-1">AI Summary:</h5>
-              <p class="text-sm text-gray-700">{{ doc.document_summaries[0].summary_text }}</p>
+            <div v-if="analyzingState[doc.id]" class="mt-3">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-xs text-gray-600">Analyzing and summarizing...</span>
+                <span class="text-xs text-gray-500">{{ Math.round(analyzingProgress[doc.id] || 0) }}%</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                <div
+                  class="bg-green-600 h-2 rounded-full transition-all duration-300"
+                  :style="{ width: (analyzingProgress[doc.id] || 0) + '%' }"
+                ></div>
+              </div>
+              <p class="text-xs text-gray-500 mt-2">This process may take several minutes. Please be patient.</p>
             </div>
+            <!-- Inline summary removed: opened via View or Edit Summary modal -->
           </div>
         </div>
         <div v-else class="text-gray-500 text-sm">No documents uploaded yet.</div>
@@ -272,6 +282,60 @@
       </div>
     </div>
   </div>
+
+  <!-- Edit Summary Modal -->
+  <div v-if="showEditSummary" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-6 relative">
+      <button @click="cancelEditSummary" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+        <XIcon class="h-6 w-6" />
+      </button>
+      <h2 class="text-xl font-bold mb-4 text-gray-900">Edit AI Summary</h2>
+      <textarea
+        v-model="editSummaryText"
+        class="w-full border rounded-lg p-3 h-48 text-sm text-gray-800"
+        placeholder="Edit the AI-generated summary..."
+      ></textarea>
+      <div class="mt-4 flex justify-end gap-3">
+        <button @click="cancelEditSummary" class="px-4 py-2 rounded-lg border text-gray-700 hover:bg-gray-50">Cancel</button>
+        <button @click="saveEditedSummary" :disabled="isSavingSummary" class="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-50">
+          {{ isSavingSummary ? 'Saving...' : 'Save' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div v-if="showDeleteConfirm" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+      <h3 class="text-lg font-semibold text-gray-900 mb-2">Delete document?</h3>
+      <p class="text-sm text-gray-600 mb-4">Are you sure you want to delete this document? This action cannot be undone.</p>
+      <div class="flex justify-end gap-3">
+        <button @click="cancelDelete" class="px-4 py-2 rounded-lg border text-gray-700 hover:bg-gray-50">Cancel</button>
+        <button @click="confirmDelete" class="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div v-if="toast.visible" class="fixed bottom-6 right-6 z-50">
+    <div
+      :class="[
+        'rounded-xl shadow-lg px-4 py-3 min-w-[260px] border',
+        toast.type === 'success' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+      ]"
+    >
+      <div class="flex items-start gap-3">
+        <div :class="['h-8 w-8 rounded-lg flex items-center justify-center', toast.type === 'success' ? 'bg-green-100' : 'bg-red-100']">
+          <SparklesIcon v-if="toast.type === 'success'" class="h-5 w-5 text-green-700" />
+          <XIcon v-else class="h-5 w-5 text-red-700" />
+        </div>
+        <div>
+          <p :class="['text-sm font-semibold', toast.type === 'success' ? 'text-green-800' : 'text-red-800']">{{ toast.title }}</p>
+          <p :class="['text-xs mt-1', toast.type === 'success' ? 'text-green-700' : 'text-red-700']">{{ toast.message }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -296,6 +360,17 @@ const isLoadingDocuments = ref(false)
 const documentError = ref('')
 const uploadError = ref('')
 const isUploading = ref(false)
+const analyzingState = ref({})
+const analyzingProgress = ref({})
+
+// Toast state
+const toast = ref({ visible: false, type: 'success', title: '', message: '' })
+let toastTimer = null
+function showToast(type, title, message) {
+  toast.value = { visible: true, type, title, message }
+  if (toastTimer) clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => { toast.value.visible = false }, 2500)
+}
 
 // Documents per job (object keyed by jobId)
 const jobDocuments = ref({
@@ -334,6 +409,16 @@ const newDoc = ref({
 
 const showPreview = ref(false)
 const previewDoc = ref({})
+
+// Edit summary modal state
+const showEditSummary = ref(false)
+const editSummaryText = ref('')
+const isSavingSummary = ref(false)
+const editingDoc = ref(null)
+
+// Delete confirmation modal state
+const showDeleteConfirm = ref(false)
+const deleteTargetId = ref(null)
 
 const jobseekers = ref([
   {
@@ -384,7 +469,7 @@ async function uploadDocument() {
       !newDoc.value.type ||
       !newDoc.value.file
     ) {
-      alert('Please fill in all fields and select a file.')
+      showToast('error', 'Missing information', 'Please fill in all fields and select a file.')
       return
     }
 
@@ -454,8 +539,8 @@ async function uploadDocument() {
       throw new Error(`Database save failed: ${saveError.message}`)
     }
 
-    // 6. Add to local documents list
-    companyDocuments.value.unshift(savedDocument)
+    // 6. Add to local documents list (append so newest appears last)
+    companyDocuments.value.push(savedDocument)
 
     // 7. Reset form
     newDoc.value = { name: '', category: 'HR Policies', description: '', type: 'PDF', file: null }
@@ -464,12 +549,12 @@ async function uploadDocument() {
     const fileInput = document.querySelector('input[type="file"]')
     if (fileInput) fileInput.value = ''
 
-    alert('Document uploaded successfully!')
+    showToast('success', 'Upload complete', 'Document uploaded successfully.')
 
   } catch (error) {
     console.error('Error uploading document:', error)
     uploadError.value = error.message
-    alert(`Upload failed: ${error.message}`)
+    showToast('error', 'Upload failed', error.message)
   } finally {
     isUploading.value = false
   }
@@ -503,34 +588,102 @@ function previewDocument(doc) {
   showPreview.value = true
 }
 
+function openEditSummary(doc) {
+  editingDoc.value = doc
+  editSummaryText.value = (doc.document_summary || (doc.document_summaries && doc.document_summaries[0]?.summary_text) || '').toString()
+  showEditSummary.value = true
+}
+
+function cancelEditSummary() {
+  showEditSummary.value = false
+  editSummaryText.value = ''
+  editingDoc.value = null
+}
+
 async function markAnalyzed(doc) {
   try {
-    // Update the document in the database
+    analyzingState.value = { ...analyzingState.value, [doc.id]: true }
+    analyzingProgress.value = { ...analyzingProgress.value, [doc.id]: 5 }
+    // Call backend to re-analyze and generate summary into company_documents.document_summary
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+    const params = new URLSearchParams({
+      supabaseUrl,
+      supabaseKey
+    })
+
+    const progressTimer = setInterval(() => {
+      const current = analyzingProgress.value[doc.id] || 0
+      const next = Math.min(current + Math.random() * 10 + 5, 95)
+      analyzingProgress.value = { ...analyzingProgress.value, [doc.id]: next }
+    }, 500)
+
+    const response = await fetch(`http://localhost:3010/api/reanalyze-document/${doc.id}?${params.toString()}`, {
+      method: 'POST'
+    })
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}))
+      throw new Error(err.error || 'Failed to analyze document')
+    }
+
+    const result = await response.json()
+    clearInterval(progressTimer)
+    analyzingProgress.value = { ...analyzingProgress.value, [doc.id]: 100 }
+
+    // Reflect changes locally
+    doc.is_analyzed = true
+    doc.analysis_status = 'COMPLETED'
+    if (result?.summary?.summary) {
+      doc.document_summary = result.summary.summary
+    }
+    showToast('success', 'Document analyzed', 'AI summary generated successfully.')
+  } catch (error) {
+    console.error('Error marking document as analyzed:', error)
+    showToast('error', 'Analyze failed', error.message || 'Unexpected error occurred.')
+  } finally {
+    setTimeout(() => {
+      analyzingState.value = { ...analyzingState.value, [doc.id]: false }
+      analyzingProgress.value = { ...analyzingProgress.value, [doc.id]: 0 }
+    }, 600)
+  }
+}
+
+async function saveEditedSummary() {
+  try {
+    if (!editingDoc.value) return
+    isSavingSummary.value = true
+
     const { error: updateError } = await supabase
       .from('company_documents')
-      .update({ 
-        is_analyzed: true, 
-        analysis_status: 'COMPLETED' 
+      .update({
+        document_summary: editSummaryText.value,
+        updated_at: new Date().toISOString()
       })
-      .eq('id', doc.id)
+      .eq('id', editingDoc.value.id)
 
     if (updateError) {
-      throw new Error(`Failed to update document: ${updateError.message}`)
+      throw new Error(updateError.message)
     }
 
     // Update local state
-    doc.is_analyzed = true
-    doc.analysis_status = 'COMPLETED'
-    
-    alert('Document marked as analyzed!')
+    editingDoc.value.document_summary = editSummaryText.value
+
+    showEditSummary.value = false
+    editSummaryText.value = ''
+    editingDoc.value = null
+    showToast('success', 'Summary updated', 'Changes saved successfully.')
   } catch (error) {
-    console.error('Error marking document as analyzed:', error)
-    alert(`Failed to mark as analyzed: ${error.message}`)
+    console.error('Error saving summary:', error)
+    alert(`Failed to save summary: ${error.message}`)
+  } finally {
+    isSavingSummary.value = false
   }
 }
 
 function editDocument(doc) {
-  alert('Edit functionality coming soon!')
+  showToast('success', 'Info', 'Edit functionality coming soon!')
 }
 
 // Load company documents from database
@@ -560,7 +713,7 @@ const loadCompanyDocuments = async () => {
       .from('company_documents')
       .select('*')
       .eq('company_id', companyProfile.id)
-      .order('created_at', { ascending: false })
+      .order('created_at', { ascending: true })
     
     if (fetchError) {
       throw new Error(`Failed to fetch documents: ${fetchError.message}`)
@@ -577,30 +730,37 @@ const loadCompanyDocuments = async () => {
   }
 }
 
-async function deleteDocument(docId) {
-  try {
-    if (!confirm('Are you sure you want to delete this document?')) {
-      return
-    }
+function deleteDocument(docId) {
+  deleteTargetId.value = docId
+  showDeleteConfirm.value = true
+}
 
-    // Delete from database
+async function confirmDelete() {
+  try {
+    if (!deleteTargetId.value) return
     const { error: deleteError } = await supabase
       .from('company_documents')
       .delete()
-      .eq('id', docId)
+      .eq('id', deleteTargetId.value)
 
     if (deleteError) {
       throw new Error(`Failed to delete document: ${deleteError.message}`)
     }
 
-    // Remove from local list
-    companyDocuments.value = companyDocuments.value.filter(d => d.id !== docId)
-    
-    alert('Document deleted successfully!')
+    companyDocuments.value = companyDocuments.value.filter(d => d.id !== deleteTargetId.value)
+    showToast('success', 'Deleted', 'Document deleted successfully.')
   } catch (error) {
     console.error('Error deleting document:', error)
-    alert(`Delete failed: ${error.message}`)
+    showToast('error', 'Delete failed', error.message)
+  } finally {
+    showDeleteConfirm.value = false
+    deleteTargetId.value = null
   }
+}
+
+function cancelDelete() {
+  showDeleteConfirm.value = false
+  deleteTargetId.value = null
 }
 
 // Load documents when component mounts
