@@ -144,57 +144,42 @@ const extractTextFromFile = async (filePath, mimeType) => {
 // Enhanced question classification
 const classifyQuestion = (question) => {
   const questionLower = question.toLowerCase()
-  
-  // Document-specific questions
   if (questionLower.includes('document') || questionLower.includes('file') || 
       questionLower.includes('upload') || questionLower.includes('policy')) {
     return 'document_specific'
   }
-  
-  // General knowledge questions
   if (questionLower.includes('remote work') || questionLower.includes('vacation') || 
       questionLower.includes('benefits') || questionLower.includes('onboarding')) {
     return 'general_knowledge'
   }
-  
-  // Company policies
   if (questionLower.includes('policy') || questionLower.includes('rule') || 
       questionLower.includes('procedure') || questionLower.includes('guideline')) {
     return 'company_policies'
   }
-  
-  // Benefits and HR
   if (questionLower.includes('benefit') || questionLower.includes('insurance') || 
       questionLower.includes('401k') || questionLower.includes('salary')) {
     return 'benefits'
   }
-  
-  // IT and Security
   if (questionLower.includes('password') || questionLower.includes('security') || 
       questionLower.includes('it') || questionLower.includes('computer')) {
     return 'it_security'
   }
-  
-  // Onboarding
   if (questionLower.includes('onboard') || questionLower.includes('new employee') || 
       questionLower.includes('first week') || questionLower.includes('orientation')) {
     return 'onboarding'
   }
-  
   return 'general'
 }
 
 // Enhanced answer generation
 const generateAnswer = async (question, context, questionType) => {
   try {
-    // For document-specific questions, use QA pipeline
     if (questionType === 'document_specific' && context && qaPipeline) {
       console.log('🔍 Using QA pipeline for document-specific question')
       const qa = await qaPipeline({
         question: question,
         context: context
       })
-      
       if (qa?.answer && qa.score > 0.3) {
         return {
           answer: qa.answer,
@@ -204,27 +189,21 @@ const generateAnswer = async (question, context, questionType) => {
         }
       }
     }
-    
-    // For general questions, use text generation pipeline
     if (textGenerationPipeline) {
       console.log('🤖 Using text generation for general question')
-      
       let prompt = ''
       if (questionType === 'general_knowledge' || questionType === 'company_policies' || 
           questionType === 'benefits' || questionType === 'it_security' || questionType === 'onboarding') {
-        
         const relevantKnowledge = GENERAL_KNOWLEDGE[questionType] || []
         prompt = `Based on the following company information, answer this question: "${question}"\n\nCompany Information:\n${relevantKnowledge.join('\n')}\n\nAnswer:`
       } else {
         prompt = `Answer this question about company policies and procedures: "${question}"\n\nAnswer:`
       }
-      
       const result = await textGenerationPipeline(prompt, {
         max_length: 200,
         temperature: 0.7,
         do_sample: true
       })
-      
       if (result?.[0]?.generated_text) {
         const answer = result[0].generated_text.replace(prompt, '').trim()
         return {
@@ -235,11 +214,8 @@ const generateAnswer = async (question, context, questionType) => {
         }
       }
     }
-    
-    // Fallback: keyword-based answer
     console.log('🔄 Using keyword-based fallback')
     return generateKeywordBasedAnswer(question, questionType)
-    
   } catch (error) {
     console.error('Answer generation error:', error)
     return generateKeywordBasedAnswer(question, questionType)
@@ -249,8 +225,6 @@ const generateAnswer = async (question, context, questionType) => {
 // Keyword-based answer generation
 const generateKeywordBasedAnswer = (question, questionType) => {
   const questionLower = question.toLowerCase()
-  
-  // Check for specific keywords and provide relevant answers
   if (questionLower.includes('remote work')) {
     return {
       answer: 'Remote work is allowed up to 3 days per week with manager approval. You need to discuss your remote work arrangement with your supervisor and have it documented.',
@@ -259,7 +233,6 @@ const generateKeywordBasedAnswer = (question, questionType) => {
       model: 'Keyword Matching'
     }
   }
-  
   if (questionLower.includes('vacation') || questionLower.includes('time off')) {
     return {
       answer: 'Full-time employees accrue vacation time at a rate of 1.25 days per month during their first year of employment. This increases to 1.5 days per month after one year.',
@@ -268,7 +241,6 @@ const generateKeywordBasedAnswer = (question, questionType) => {
       model: 'Keyword Matching'
     }
   }
-  
   if (questionLower.includes('benefit') || questionLower.includes('insurance')) {
     return {
       answer: 'We offer comprehensive benefits including health insurance with company contribution, 401(k) with 6% matching, dental and vision coverage, and life insurance. The enrollment period is November 1-30 annually.',
@@ -277,7 +249,6 @@ const generateKeywordBasedAnswer = (question, questionType) => {
       model: 'Keyword Matching'
     }
   }
-  
   if (questionLower.includes('onboard') || questionLower.includes('new employee')) {
     return {
       answer: 'The onboarding process includes completing your profile setup, reading the employee handbook, completing IT setup and security training, and attending company orientation. Your manager will schedule a 1:1 meeting within your first week.',
@@ -286,7 +257,6 @@ const generateKeywordBasedAnswer = (question, questionType) => {
       model: 'Keyword Matching'
     }
   }
-  
   if (questionLower.includes('password') || questionLower.includes('security')) {
     return {
       answer: 'Passwords must be at least 12 characters with complexity requirements. Multi-factor authentication is required for all systems, and security incidents must be reported within 1 hour.',
@@ -295,8 +265,6 @@ const generateKeywordBasedAnswer = (question, questionType) => {
       model: 'Keyword Matching'
     }
   }
-  
-  // Generic helpful response
   return {
     answer: 'I understand you\'re asking about company policies. While I don\'t have specific information about that topic, I can help you with general company policies, benefits, onboarding procedures, and IT security guidelines. You can also check the company documents uploaded by HR for more detailed information.',
     confidence: 0.6,
@@ -309,21 +277,16 @@ const generateKeywordBasedAnswer = (question, questionType) => {
 app.post('/api/enhanced-chat', async (req, res) => {
   try {
     const { supabaseUrl, supabaseKey, question, companyId, userId } = req.body
-
     if (!supabaseUrl || !supabaseKey || !question || !companyId) {
       return res.status(400).json({ error: 'Missing required parameters' })
     }
-
     supabase = createClient(supabaseUrl, supabaseKey)
-
-    // Verify user belongs to the company
     if (userId) {
       const { data: userProfile, error: profileError } = await supabase
         .from('job_seeker_profiles')
         .select('company_id')
         .eq('user_id', userId)
         .single()
-
       if (profileError) {
         console.log(`⚠️ Could not verify user company: ${profileError.message}`)
       } else if (userProfile && userProfile.company_id !== companyId) {
@@ -333,46 +296,30 @@ app.post('/api/enhanced-chat', async (req, res) => {
         })
       }
     }
-
     console.log(`🔍 Processing question: "${question}"`)
-
-    // Classify the question type
     const questionType = classifyQuestion(question)
     console.log(`📊 Question classified as: ${questionType}`)
-
-    // Initialize RAG components
     await initializeRAG()
-
     let answer = null
     let sources = []
     let context = ''
-
-    // For document-specific questions, search company documents
     if (questionType === 'document_specific') {
       console.log('📚 Searching company documents for specific information')
-      
       const { data: documents, error: docError } = await supabase
         .from('company_documents')
         .select('id, title, description, category, document_content, mime_type')
         .eq('company_id', companyId)
         .eq('is_analyzed', true)
-
       if (docError) throw docError
-
       if (documents && documents.length > 0) {
-        // Find most relevant document content
         const questionEmbedding = await embeddingPipeline(question)
         const questionVec = Array.from(questionEmbedding.data || questionEmbedding[0]?.data || questionEmbedding)
-
         let bestDoc = null
         let bestScore = -1
-
         for (const doc of documents) {
           if (doc.document_content) {
             const docEmbedding = await embeddingPipeline(doc.document_content.substring(0, 1000))
             const docVec = Array.from(docEmbedding.data || docEmbedding[0]?.data || docEmbedding)
-            
-            // Calculate cosine similarity
             const similarity = cosineSimilarity(questionVec, docVec)
             if (similarity > bestScore) {
               bestScore = similarity
@@ -380,7 +327,6 @@ app.post('/api/enhanced-chat', async (req, res) => {
             }
           }
         }
-
         if (bestDoc && bestScore > 0.3) {
           context = bestDoc.document_content
           sources = [bestDoc.title]
@@ -388,18 +334,12 @@ app.post('/api/enhanced-chat', async (req, res) => {
         }
       }
     }
-
-    // Generate answer based on question type and available context
     answer = await generateAnswer(question, context, questionType)
-
-    // Add sources if we have document context
     if (sources.length > 0) {
       answer.sources = sources
     }
-
     console.log(`💡 Generated answer: ${answer.answer.substring(0, 100)}...`)
     console.log(`🎯 Confidence: ${answer.confidence}, Source: ${answer.source}`)
-
     res.json({
       answer: answer.answer,
       confidence: answer.confidence,
@@ -408,7 +348,6 @@ app.post('/api/enhanced-chat', async (req, res) => {
       questionType: questionType,
       source: answer.source
     })
-
   } catch (error) {
     console.error('Error in enhanced chat:', error)
     res.status(500).json({ 
@@ -435,7 +374,7 @@ const cosineSimilarity = (a, b) => {
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'OK', 
-    service: 'Enhanced Document QA API',
+    service: 'Document Summary API',
     timestamp: new Date().toISOString(),
     models: {
       embedding: EMBEDDING_MODEL_ID,
@@ -447,12 +386,13 @@ app.get('/health', (req, res) => {
 
 // Start server
 app.listen(PORT, async () => {
-  console.log(`🚀 Enhanced Document QA API running on port ${PORT}`)
+  console.log(`🚀 Document Summary API running on port ${PORT}`)
   console.log(`🔗 Health check: http://localhost:${PORT}/health`)
-  
-  // Initialize RAG components
   await initializeRAG()
-  console.log(`🎯 RAG system ready: Enhanced Embedding search + QA + Text Generation`)
+  console.log(`🎯 RAG system ready: Embedding search + QA + Text Generation`)
 })
 
 export default app
+// ... existing code ...
+// Intentionally left blank; we will copy contents from enhanced-document-qa-api.js next.
+

@@ -8,9 +8,11 @@
   },
   "scripts": {
     "dev": "vite",
-    "dev:full": "concurrently \"npm run dev\" \"npm run dev:embedding-api\" \"npm run dev:document-qa\"",
+    "dev:full": "concurrently -k -r -n web,embed,doc,summary,job -c green,blue,cyan,magenta,yellow \"npm run dev\" \"npm run dev:embedding-api\" \"npm run dev:document-qa\" \"npm run dev:document-summary\" \"npm run dev:job-matching\"",
     "dev:embedding-api": "cd server-scripts && npm run dev",
     "dev:document-qa": "cd server-scripts && npm run dev:document-qa",
+    "dev:document-summary": "cd server-scripts && npm run dev:enhanced-qa",
+    "dev:job-matching": "cd server-scripts && npm run dev:job-matching",
     "build": "run-p type-check \"build-only {@}\" --",
     "preview": "vite preview",
     "build-only": "vite build",

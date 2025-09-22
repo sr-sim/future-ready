@@ -6,6 +6,7 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { pipeline } from '@xenova/transformers'
+import mammoth from 'mammoth'
 // Note: You'll need to install pdf-parse: npm install pdf-parse
 // import pdf from 'pdf-parse'
 
@@ -13,7 +14,7 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 const app = express()
-const PORT = process.env.PORT || 3006
+const PORT = process.env.PORT || 3010
 
 // Middleware
 app.use(cors())
@@ -57,6 +58,8 @@ let qaPipeline = null
 const EMBEDDING_MODEL_ID = 'Xenova/all-MiniLM-L6-v2'
 const QA_MODEL_ID = 'Xenova/distilbert-base-uncased-distilled-squad'
 
+// Placeholder for optional generative model (may remain null)
+let aiModel = null
 
 
 // Initialize RAG components: Embedding + QA
@@ -102,22 +105,29 @@ const extractTextFromFile = async (filePath, mimeType) => {
         const fileName = path.basename(filePath)
         return `PDF Document: ${fileName}\n\nError: Could not process PDF file - ${pdfError.message}\n\nPlease refer to the original PDF file for content.`
       }
-    } else if (mimeType.includes('word') || mimeType.includes('document')) {
-      const fileName = path.basename(filePath)
-      const content = `Word Document: ${fileName}
-
-This document contains company policies, procedures, and guidelines. The document has been uploaded and is available for reference.
-
-Typical content includes:
-- Employee handbooks and policies
-- HR procedures and guidelines
-- Company procedures and workflows
-- Training materials and guidelines
-- Compliance documentation
-
-Please refer to the original document file for complete details and formatting.`
-      console.log(`📄 Extracted Word document content: ${content.length} characters`)
-      return content
+    } else if (mimeType.includes('word') || mimeType.includes('document') || filePath.endsWith('.docx')) {
+      try {
+        const buffer = fs.readFileSync(filePath)
+        const { value } = await mammoth.convertToHtml({ buffer })
+        // Convert simple HTML to markdown-like text (preserve headings and lists)
+        const html = value || ''
+        const text = html
+          .replace(/<\/?h[1-6][^>]*>/gi, '\n\n')
+          .replace(/<li[^>]*>/gi, '\n• ')
+          .replace(/<\/?ul[^>]*>/gi, '\n')
+          .replace(/<\/?ol[^>]*>/gi, '\n')
+          .replace(/<p[^>]*>/gi, '')
+          .replace(/<\/?p[^>]*>/gi, '\n')
+          .replace(/<br\s*\/?>(\r?\n)?/gi, '\n')
+          .replace(/<[^>]+>/g, '')
+          .replace(/\n{3,}/g, '\n\n')
+          .trim()
+        console.log(`📄 Extracted DOCX content: ${text.length} characters`)
+        return text
+      } catch (docxError) {
+        console.error('DOCX extraction failed:', docxError)
+        return `Document: ${path.basename(filePath)}\nContent extraction not available for DOCX: ${docxError.message}`
+      }
     } else {
       const fileName = path.basename(filePath)
       const content = `Document: ${fileName}
@@ -671,11 +681,15 @@ app.post('/api/reanalyze-document/:documentId', async (req, res) => {
       extractedContent = `Document: ${document.title}\nDescription: ${document.description}\nCategory: ${document.category}\nContent: No file URL available for content extraction`
     }
 
-    // Update document with extracted content
+    // Generate/update summary based on extracted content
+    const summary = await generateDocumentSummary(extractedContent)
+
+    // Update document with extracted content and summary
     const { error: updateError } = await supabase
       .from('company_documents')
       .update({
         document_content: extractedContent,
+        document_summary: summary.summary,
         analysis_status: 'COMPLETED',
         is_analyzed: true,
         updated_at: new Date().toISOString()
@@ -688,7 +702,8 @@ app.post('/api/reanalyze-document/:documentId', async (req, res) => {
       message: 'Document re-analyzed successfully',
       documentId: documentId,
       contentLength: extractedContent.length,
-      extractedContent: extractedContent.substring(0, 500) + '...' // Preview
+      extractedContent: extractedContent.substring(0, 500) + '...', // Preview
+      summary
     })
 
   } catch (error) {
@@ -726,43 +741,56 @@ app.get('/api/chat-history/:userId', async (req, res) => {
   }
 })
 
-// Add missing function for document summary
-const generateDocumentSummary = async (text) => {
+// Local summarization: section-aware map-reduce using transformers.js (DistilBART)
+const summarizeWithLocalModel = async (text) => {
   try {
-    if (!aiModel) {
-      const words = text.split(' ')
-      const wordCount = words.length
-      return {
-        summary: `This document contains ${wordCount} words and covers various topics related to the company.`,
-        keyPoints: ['Document processed successfully', 'Contains company information'],
-        topics: ['General', 'Company Information']
+    const summarizer = await pipeline('summarization', 'Xenova/distilbart-cnn-12-6')
+
+    // Split by headings (simple heuristic) and double newlines
+    const rawSections = text.split(/\n\n(?=[A-Z][A-Za-z0-9\-\s]{2,}$)|\n\n/)
+      .map(s => s.trim()).filter(Boolean)
+
+    // Group into chunks ~800-1200 chars
+    const chunks = []
+    let current = ''
+    for (const s of rawSections) {
+      if ((current + '\n\n' + s).length > 1200 && current) {
+        chunks.push(current)
+        current = s
+      } else {
+        current = current ? (current + '\n\n' + s) : s
       }
     }
+    if (current) chunks.push(current)
 
-    const summaryPrompt = `Document: ${text.substring(0, 1000)}...\n\nSummary:`
+    const sectionSummaries = []
+    for (const c of chunks) {
+      const out = await summarizer(c, { max_length: 180, min_length: 80 })
+      const sum = Array.isArray(out) ? out[0]?.summary_text : out?.summary_text
+      if (sum) sectionSummaries.push(sum)
+    }
 
-    const summaryResponse = await aiModel(summaryPrompt, {
-      max_new_tokens: 100,
-      temperature: 0.2,
-      do_sample: true
-    })
-
-    const summaryText = summaryResponse[0].generated_text
-    const summary = summaryText.replace(summaryPrompt, '').trim()
+    const combined = sectionSummaries.join('\n') || text.slice(0, 1200)
+    const finalOut = await summarizer(
+      `Create an executive summary from the following notes. Include: what it is, key features (bullets), primary applications (bullets), notable facts, and a one-sentence takeaway.\n\nNotes:\n${combined}`,
+      { max_length: 220, min_length: 120 }
+    )
+    const finalSummary = Array.isArray(finalOut) ? finalOut[0]?.summary_text : finalOut?.summary_text
 
     return {
-      summary: summary || 'Document summary generated successfully.',
-      keyPoints: ['Document processed successfully', 'Contains company information'],
-      topics: ['General', 'Company Information']
+      summary: (finalSummary || combined).trim()
     }
-  } catch (error) {
-    console.error('Error generating summary:', error)
-    return {
-      summary: 'Document summary: This document contains important company information.',
-      keyPoints: ['Document processed successfully'],
-      topics: ['General']
-    }
+  } catch (e) {
+    console.error('Local summarization failed, falling back:', e)
+    const words = text.split(/\s+/)
+    const fallback = words.slice(0, 120).join(' ')
+    return { summary: fallback }
   }
+}
+
+// Generate document summary (uses local model pipeline)
+const generateDocumentSummary = async (text) => {
+  return summarizeWithLocalModel(text)
 }
 
 // Start server
