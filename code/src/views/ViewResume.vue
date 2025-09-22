@@ -8,7 +8,7 @@
           class="flex items-center px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
         >
           <ArrowLeftIcon class="h-5 w-5 mr-2" />
-          Back to Candidates
+          Back
         </button>
         <div class="flex gap-3">
           <button

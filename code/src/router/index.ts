@@ -15,6 +15,7 @@ import material from '../views/HR-material.vue'
 import ViewResume from '../views/ViewResume.vue'
 import talentpool from '../views/HR-TalentPool.vue'
 import onboardingmanagement from '../views/HR-OnboardingManagement.vue' 
+import jobbrowse from '../views/Jobseeker-JobBrowse.vue'
 
 const routes = [
   { path: '/', name: 'Login', component: Login },
@@ -30,7 +31,8 @@ const routes = [
   { path: '/material', name: 'Material', component: material },
   { path: '/view-resume', name: 'ViewResume', component: ViewResume },
   { path: '/talentpool', name: 'TalentPool', component: talentpool },
-  { path: '/onboarding-management', name: 'OnboardingManagement', component: onboardingmanagement }
+  { path: '/onboarding-management', name: 'OnboardingManagement', component: onboardingmanagement },
+  { path: '/jobbrowse', name: 'JobBrowse', component: jobbrowse }
 
 ]
 const router = createRouter({
