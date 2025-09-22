@@ -183,7 +183,7 @@
             <div
               v-for="(applicant, index) in sortedApplicants"
               :key="applicant.id"
-              class="border border-gray-700 rounded-xl hover:bg-gray-50 transition-colors overflow-hidden"
+              class="border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors overflow-hidden"
             >
               <div class="flex items-center justify-between p-6">
                 <div class="flex items-center">
@@ -230,12 +230,13 @@
                   </div>
                   
                   <div class="flex items-center space-x-3">
-                    <button
-                      @click="viewApplicant(applicant)"
+                    <router-link
+                      :to="{ name: 'ViewResume' }"
                       class="text-blue-600 hover:text-blue-700 text-sm font-medium px-4 py-2 hover:bg-blue-50 rounded-lg transition-colors"
                     >
                       View Resume
-                    </button>
+                    </router-link>
+
                     <button
                       @click="shortlistApplicant(applicant)"
                       :class="[
@@ -730,7 +731,7 @@ const toggleSortOrder = () => {
 }
 
 const viewApplicant = (applicant) => {
-  console.log('View applicant:', applicant.name)
+  router.push({ name: 'ViewResume' })   // ✅ This will navigate to /view-resume
 }
 
 const shortlistApplicant = (applicant) => {

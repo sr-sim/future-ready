@@ -52,12 +52,11 @@
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               >
                 <option value="">All Locations</option>
-                <option value="San Francisco, CA">San Francisco, CA</option>
-                <option value="New York, NY">New York, NY</option>
-                <option value="Seattle, WA">Seattle, WA</option>
-                <option value="Austin, TX">Austin, TX</option>
+                <option value="Kuala Lumpur">Kuala Lumpur</option>
+                <option value="Johor Bahru">Johor Bahru</option>
+                <option value="Sarawak">Sarawak</option>
+                <option value="Sabah">Sabah</option>
                 <option value="Remote">Remote</option>
-                <option value="Boston, MA">Boston, MA</option>
               </select>
             </div>
 
