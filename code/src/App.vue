@@ -24,7 +24,6 @@ const menus = {
     { name: "Home", to: "/hrhome", icon: HomeIcon },
     { name: "Job Management", to: "/upload", icon: UploadCloudIcon },
     { name: "AI Matching Result", to: "/results", icon: BarChart3Icon },
-    { name: "Talent Pool", to: "/talentpool", icon: Users},
     { name: "Shortlisted Candidates", to: "/shortlist", icon: StarIcon },
     { name: "Onboarding Material", to: "/material", icon: FolderIcon },
     { name: "Onboarding Management", to: "/onboarding-management", icon: SquareChartGantt },

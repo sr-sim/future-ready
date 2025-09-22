@@ -30,7 +30,15 @@
         <div class="flex items-center justify-between">
           <div>
             <h2 class="text-3xl font-bold mb-2">Welcome back, HR Manager!</h2>
-            <p class="text-blue-100 text-lg">Here's what's happening with your talent acquisition today.</p>
+            <p class="text-blue-100 text-lg mb-4">Here's what's happening with your talent acquisition today.</p>
+            <div class="flex items-center space-x-4">
+              <button 
+                @click="navigateTotalentpool"
+                class="bg-white text-indigo-600 px-6 py-2 rounded-xl font-semibold hover:bg-green-50 transition-colors"
+              >
+                Browse Talents
+              </button>
+            </div>
           </div>
           <div class="hidden md:block">
             <div class="h-20 w-20 bg-white/20 rounded-full flex items-center justify-center">
@@ -180,6 +188,11 @@ const stats = ref({
   interviews: 18,
   activeJobs: 12
 })
+import { useRouter } from 'vue-router'
+const router = useRouter()
+const navigateTotalentpool = () => {
+  router.push('/talentpool')
+}
 
 const recentActivities = ref([
   {
