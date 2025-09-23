@@ -19,7 +19,7 @@
               <span class="text-sm text-gray-700">HR Manager</span>
             </div>
           </div>
-        </div>
+        </div>  
       </div>
     </header>
 
@@ -164,13 +164,20 @@
                 <XIcon class="h-4 w-4 mr-2" />
                 Reject
               </button>
-              <button
+              <!-- <button
                 @click="viewResume(candidate.id)"
                 class="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
               >
                 <EyeIcon class="h-4 w-4 mr-2" />
                 View Resume
-              </button>
+              </button> -->
+              <RouterLink
+  :to="{ name: 'ViewResume', query: { candidateId: candidate.id } }"
+  class="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+>
+  <EyeIcon class="h-4 w-4 mr-2" />
+  View Resume
+</RouterLink>
             </div>
           </div>
         </div>

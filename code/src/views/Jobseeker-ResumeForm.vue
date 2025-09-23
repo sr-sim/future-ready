@@ -150,7 +150,7 @@
       </div>
 
       <!-- Quick Actions -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <button
           @click="loadSavedResume"
           class="bg-white rounded-xl shadow-lg border border-gray-100 p-4 hover:shadow-xl transition-all duration-200 text-left"
@@ -171,6 +171,16 @@
             <span class="font-semibold text-gray-900">Start Fresh</span>
           </div>
           <p class="text-sm text-gray-600">Clear all fields and start over</p>
+        </button>
+                <button
+          @click="viewresume"
+          class="bg-white rounded-xl shadow-lg border border-gray-100 p-4 hover:shadow-xl transition-all duration-200 text-left"
+        >
+          <div class="flex items-center mb-2">
+            <ChartNoAxesGantt class="h-5 w-5 text-orange-600 mr-2" />
+            <span class="font-semibold text-gray-900">View Resume</span>
+          </div>
+          <p class="text-sm text-gray-600">You can download your resume as a PDF</p>
         </button>
 
         <!-- <button
@@ -600,6 +610,7 @@ import {
   SearchIcon,
   BuildingIcon,
   AlertCircleIcon,
+  ChartNoAxesGantt,
   LightbulbIcon,
   InfoIcon,
   StarIcon
@@ -991,6 +1002,11 @@ const addExperience = () => {
     description: ''
   })
 }
+const viewresume = () => {
+  // navigate to the ViewResume page
+  router.push({ name: 'ViewResume' })
+}
+
 
 const removeExperience = (index) => {
   formData.value.experience.splice(index, 1)

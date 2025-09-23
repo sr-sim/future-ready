@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { HomeIcon, UploadCloudIcon, BarChart3Icon, StarIcon, FolderIcon } from 'lucide-vue-next'
+import { HomeIcon, UploadCloudIcon, BarChart3Icon, StarIcon, FolderIcon,Users,SquareChartGantt  } from 'lucide-vue-next'
 
 const router = useRouter()
 
@@ -26,6 +26,7 @@ const menus = {
     { name: "AI Matching Result", to: "/results", icon: BarChart3Icon },
     { name: "Shortlisted Candidates", to: "/shortlist", icon: StarIcon },
     { name: "Onboarding Material", to: "/material", icon: FolderIcon },
+    { name: "Onboarding Management", to: "/onboarding-management", icon: SquareChartGantt },
   ]
 }
 
@@ -46,7 +47,7 @@ function logout() {
       <!-- Sidebar -->
       <aside
         v-if="$route.path !== '/'"
-        class="fixed top-0 left-0 h-full w-64 bg-gray-800 text-white flex flex-col shadow-lg z-40 transition-transform duration-300"
+        class="fixed top-0 left-0 h-full w-65 bg-gray-800 text-white flex flex-col shadow-lg z-40 transition-transform duration-300"
         :class="{
           '-translate-x-full': !sidebarOpen,
           'translate-x-0': sidebarOpen

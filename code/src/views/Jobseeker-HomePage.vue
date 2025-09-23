@@ -70,12 +70,6 @@
               >
                 Browse Jobs
               </button>
-              <button 
-                @click="navigateToProfile"
-                class="border border-white text-white px-6 py-2 rounded-xl font-semibold hover:bg-white/10 transition-colors"
-              >
-                Update Profile
-              </button>
             </div>
           </div>
           <div class="hidden lg:block">
@@ -561,11 +555,13 @@ const getStatusColor = (status) => {
       return 'bg-gray-100 text-gray-800'
   }
 }
+import { useRouter } from 'vue-router'
+const router = useRouter()
 
 // Navigation functions
 const navigateToJobSearch = () => {
   console.log('Navigate to job search')
-  // router.push('/job-search')
+  router.push('/jobbrowse')
 }
 
 const navigateToProfile = () => {
