@@ -138,25 +138,35 @@ export class EnhancedDocumentService {
   // Smart question routing - determines best approach for each question
   static async smartChat(question, companyId, userId, supabaseUrl, supabaseKey) {
     try {
-      // First try enhanced chat
-      const enhancedResponse = await this.enhancedChat(question, companyId, userId, supabaseUrl, supabaseKey)
-      
-      // If enhanced chat succeeds and has good confidence, use it
-      if (enhancedResponse && enhancedResponse.confidence > 0.5) {
+      // Prefer RAG across all documents first
+      const ragResponse = await this.chatWithDocuments(question, companyId, userId, supabaseUrl, supabaseKey)
+
+      // Then try enhanced; only accept if high-confidence and source-backed
+      let enhancedResponse = null
+      try {
+        enhancedResponse = await this.enhancedChat(question, companyId, userId, supabaseUrl, supabaseKey)
+      } catch (e) {
+        // Ignore enhanced errors; RAG already provided an answer
+      }
+
+      const hasStrongEnhanced = (
+        enhancedResponse &&
+        typeof enhancedResponse.confidence === 'number' && enhancedResponse.confidence >= 0.8 &&
+        Array.isArray(enhancedResponse.sources) && enhancedResponse.sources.length > 0
+      )
+
+      if (hasStrongEnhanced) {
         return {
           ...enhancedResponse,
           method: 'enhanced',
           fallback: false
         }
       }
-      
-      // Fallback to original chat method
-      const fallbackResponse = await this.chatWithDocuments(question, companyId, userId, supabaseUrl, supabaseKey)
-      
+
       return {
-        ...fallbackResponse,
-        method: 'fallback',
-        fallback: true
+        ...ragResponse,
+        method: 'rag',
+        fallback: false
       }
       
     } catch (error) {
