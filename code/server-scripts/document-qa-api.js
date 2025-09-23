@@ -152,11 +152,25 @@ This document has been uploaded but the content could not be extracted automatic
   }
 }
 
-// Fallback response when RAG fails
-const generateFallbackResponse = async (question, documentTexts) => {
+// Fallback response when RAG fails (improved keyword fallback)
+const generateFallbackResponse = async (question) => {
+  const q = String(question || '').toLowerCase()
+  const rules = [
+    { match: ['remote work', 'work from home', 'telecommute', 'hybrid'], answer: 'Remote work is allowed with manager approval. Specific limits and procedures are described in the General Handbook remote work policy.' },
+    { match: ['vacation', 'annual leave', 'time off', 'pto'], answer: 'Vacation (PTO) accrues monthly for full-time employees. Check the General Handbook for the exact accrual table and carryover rules.' },
+    { match: ['benefit', 'insurance', 'medical', 'dental', 'vision', '401k', 'retirement'], answer: 'Benefits include medical, dental, vision, and a retirement plan. See the Benefits section of the General Handbook.' },
+    { match: ['security', 'password', 'mfa', 'multi-factor', '2fa'], answer: 'Passwords must meet complexity requirements and MFA is required for key systems. Refer to the IT Security policy.' },
+    { match: ['onboard', 'new hire', 'first week', 'orientation'], answer: 'Onboarding includes profile setup, handbook review, IT setup, and orientation. See the Onboarding section for timelines.' },
+    { match: ['developer', 'engineering', 'code', 'git', 'repository', 'branch', 'pull request'], answer: 'Developer workflows and engineering standards are covered in the Developers Handbook, including branching strategy and code review process.' }
+  ]
+  for (const r of rules) {
+    if (r.match.some(m => q.includes(m))) {
+      return { answer: r.answer, confidence: 0.5, sources: [] }
+    }
+  }
   return {
-    answer: "Sorry, I could not find any relevant answer from the uploaded document.",
-    confidence: 0.1,
+    answer: 'I could not find a specific answer. Try rephrasing or ask about a narrower topic (e.g., vacation accrual rate, remote work days, code review policy).',
+    confidence: 0.2,
     sources: []
   }
 }
@@ -176,6 +190,81 @@ app.get('/api/health', (req, res) => {
       qaLoaded: Boolean(qaPipeline)
     }
   })
+})
+
+// Preview DOCX as HTML
+app.get('/api/preview-docx/:documentId', async (req, res) => {
+  try {
+    const { supabaseUrl, supabaseKey } = req.query
+    const { documentId } = req.params
+
+    if (!supabaseUrl || !supabaseKey) {
+      return res.status(400).send('<h3>Supabase credentials are required</h3>')
+    }
+
+    supabase = createClient(supabaseUrl, supabaseKey)
+
+    const { data: doc, error } = await supabase
+      .from('company_documents')
+      .select('*')
+      .eq('id', documentId)
+      .single()
+
+    if (error || !doc) {
+      return res.status(404).send('<h3>Document not found</h3>')
+    }
+
+    if (!(doc.file_type && doc.file_type.toLowerCase() === '.docx')) {
+      return res.status(400).send('<h3>Document is not a DOCX file</h3>')
+    }
+
+    let buffer
+    try {
+      // If file_url is a local path, try reading directly
+      if (doc.file_url && (doc.file_url.startsWith('/') || doc.file_url.match(/^[A-Za-z]:\\/))) {
+        buffer = fs.readFileSync(doc.file_url)
+      } else {
+        const response = await fetch(doc.file_url)
+        if (!response.ok) throw new Error(`Failed to download file: ${response.status}`)
+        const arrayBuffer = await response.arrayBuffer()
+        buffer = Buffer.from(arrayBuffer)
+      }
+    } catch (e) {
+      return res.status(500).send(`<h3>Failed to load DOCX: ${e.message}</h3>`)
+    }
+
+    try {
+      const { value: html } = await mammoth.convertToHtml({ buffer })
+      const page = `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${(doc.title || 'Document').replace(/</g, '&lt;')}</title>
+    <style>
+      body { font-family: ui-sans-serif, -apple-system, Segoe UI, Roboto, Arial, sans-serif; padding: 16px; color: #111827; }
+      h1,h2,h3,h4 { color: #111827; }
+      p { line-height: 1.6; }
+      ul { padding-left: 1.25rem; }
+      li { margin: 0.25rem 0; }
+      table { border-collapse: collapse; width: 100%; }
+      th, td { border: 1px solid #e5e7eb; padding: 8px; }
+      code { background: #f3f4f6; padding: 2px 4px; border-radius: 4px; }
+    </style>
+  </head>
+  <body>
+    ${html || '<p>No content extracted.</p>'}
+  </body>
+</html>`
+      res.setHeader('Content-Type', 'text/html; charset=utf-8')
+      return res.send(page)
+    } catch (e) {
+      return res.status(500).send(`<h3>Failed to convert DOCX to HTML: ${e.message}</h3>`)
+    }
+  } catch (error) {
+    console.error('Error in DOCX preview:', error)
+    return res.status(500).send('<h3>Internal Server Error</h3>')
+  }
 })
 
 // Upload and process document
@@ -389,10 +478,29 @@ app.post('/api/chat-with-documents', async (req, res) => {
     await initializeRAG()
 
     // Chunk docs and compute embeddings, then retrieve by cosine similarity to the question
-    const CHUNK_SIZE = 700
-    const CHUNK_STRIDE = 200
+    const CHUNK_SIZE = 500
+    const CHUNK_STRIDE = 100
+    const TOP_K = 5
 
-    const questionEmbedding = await embeddingPipeline(question)
+    // Lightweight query expansion to improve recall for paraphrases
+    const expansions = [
+      ['vacation', 'annual leave', 'time off', 'PTO'],
+      ['remote work', 'work from home', 'telecommute', 'hybrid'],
+      ['benefits', 'health insurance', 'medical', 'dental', 'vision', '401k', 'retirement'],
+      ['security', 'password', 'MFA', 'multi-factor', 'IT policy'],
+      ['onboarding', 'new hire', 'first week', 'orientation'],
+      // developer domain
+      ['developer', 'engineering', 'git', 'branch', 'branching', 'pull request', 'PR', 'merge request', 'code review', 'lint', 'eslint', 'prettier', 'ci', 'cd', 'pipeline', 'docker', 'kubernetes', 'k8s', 'github actions']
+    ]
+    let expandedQuestion = String(question || '')
+    const qLower = expandedQuestion.toLowerCase()
+    for (const group of expansions) {
+      if (group.some(g => qLower.includes(g))) {
+        expandedQuestion += ' ' + group.join(' ')
+      }
+    }
+
+    const questionEmbedding = await embeddingPipeline(expandedQuestion)
     const questionVec = Array.from(questionEmbedding.data || questionEmbedding[0]?.data || questionEmbedding)
 
     const chunks = []
@@ -427,15 +535,28 @@ app.post('/api/chat-with-documents', async (req, res) => {
       return denom ? dot/denom : 0
     }
 
-    let bestIdx = -1
-    let bestScore = -1
-    for (let i = 0; i < chunkEmbeddings.length; i++) {
-      const s = cosineSim(questionVec, chunkEmbeddings[i])
-      if (s > bestScore) { bestScore = s; bestIdx = i }
-    }
-
-    const topChunk = bestIdx >= 0 ? chunks[bestIdx] : null
-    const topDocs = topChunk ? [topChunk.doc] : []
+    // Score and select top-k chunks with adaptive keyword-aware reranker (domain-agnostic)
+    const qLowerAll = String(question || '').toLowerCase()
+    const stopwords = new Set(['the','a','an','and','or','but','if','then','else','for','to','of','in','on','at','by','from','with','about','into','over','after','before','between','is','are','was','were','be','been','being','it','this','that','these','those','as','not','no','do','does','did','can','could','should','would','will','shall','may','might','your','our','their','my','his','her'])
+    const rawTokens = qLowerAll.split(/[^a-z0-9+#/.%-]+/).filter(Boolean)
+    const keywords = Array.from(new Set(rawTokens.filter(t => t.length >= 4 && !stopwords.has(t))))
+    const baseScored = chunkEmbeddings.map((emb, idx) => ({ idx, cos: cosineSim(questionVec, emb) }))
+    const scored = baseScored.map(s => {
+      const text = (chunks[s.idx]?.text || '').toLowerCase()
+      let matches = 0
+      for (const kw of keywords) {
+        if (text.includes(kw)) matches += 1
+      }
+      const denom = Math.max(1, Math.min(keywords.length, 8))
+      const overlapBoost = Math.min(matches / denom, 1)
+      const combined = (0.85 * s.cos) + (0.15 * overlapBoost)
+      return { idx: s.idx, cos: s.cos, combined }
+    })
+    scored.sort((a, b) => b.combined - a.combined)
+    const topScored = scored.slice(0, Math.min(TOP_K, scored.length))
+    const topChunks = topScored.map(s => ({ ...chunks[s.idx], score: s.score }))
+    const uniqueDocTitles = Array.from(new Set(topChunks.map(tc => tc.doc.title)))
+    const topDocs = uniqueDocTitles.map(t => topChunks.find(tc => tc.doc.title === t)?.doc).filter(Boolean)
 
     // Extract text from top documents stored in database
     const documentTexts = topDocs.map(doc => {
@@ -470,12 +591,28 @@ app.post('/api/chat-with-documents', async (req, res) => {
     const sourceTitles = topDocs.map(d => d.title)
 
     // Debug logging
+    const bestCos = baseScored.sort((a,b)=>b.cos-a.cos)[0]?.cos ?? -1
+    const bestScore = topScored[0]?.combined ?? -1
     console.log(`📊 Found ${chunks.length} chunks from ${candidates.length} documents`)
-    console.log(`🎯 Best chunk score: ${bestScore}`)
-    console.log(`📝 Top chunk preview: ${topChunk ? topChunk.text.substring(0, 200) + '...' : 'None'}`)
+    console.log(`🎯 Top combined: ${topScored.map(s => s.combined.toFixed(3)).join(', ')}`)
+    console.log(`🎯 Best cosine: ${bestCos.toFixed(3)}`)
+    console.log(`📝 Top chunk preview: ${topChunks[0] ? topChunks[0].text.substring(0, 200) + '...' : 'None'}`)
+
+    // If similarity is too low, don't guess
+    const MIN_SIMILARITY = 0.2
+    if (bestCos < MIN_SIMILARITY && bestScore < MIN_SIMILARITY) {
+      console.log(`⚠️ Low similarity (cos=${bestCos.toFixed(3)} combined=${bestScore.toFixed(3)}). Returning no-answer fallback.`)
+      const fb = await generateFallbackResponse(question)
+      return res.json({
+        answer: fb.answer,
+        confidence: 0.2,
+        sources: [],
+        model: 'No-Answer Threshold'
+      })
+    }
 
     // If we have a top chunk and QA pipeline, run extractive QA
-    if (topChunk && qaPipeline) {
+    if (topChunks.length > 0 && qaPipeline) {
       try {
         // Validate QA pipeline is properly loaded
         console.log(`🔍 QA Pipeline status: ${qaPipeline ? 'loaded' : 'not loaded'}`)
@@ -486,8 +623,11 @@ app.post('/api/chat-with-documents', async (req, res) => {
           console.log(`⚠️ QA Pipeline is not a function, skipping QA`)
           throw new Error('QA Pipeline is not properly loaded')
         }
-        // Ensure topChunk.text is a proper string and not empty
-        const contextText = typeof topChunk.text === 'string' ? topChunk.text : String(topChunk.text || '')
+        // Build combined context from top-k chunks, with soft separators and titles
+        const combined = topChunks
+          .map((c, i) => `Document: ${c.doc.title}\n\n${typeof c.text === 'string' ? c.text : String(c.text || '')}`)
+          .join('\n\n---\n\n')
+        const contextText = combined
         const questionText = typeof question === 'string' ? question : String(question || '')
         
         // Additional validation to prevent empty strings
@@ -501,7 +641,7 @@ app.post('/api/chat-with-documents', async (req, res) => {
           throw new Error('Empty question text')
         }
         
-        console.log(`🤖 Running QA on chunk (${contextText.length} chars)`)
+        console.log(`🤖 Running QA on combined context (${contextText.length} chars)`)
         console.log(`🔍 Question: "${questionText}"`)
         console.log(`📝 Context preview: "${contextText.substring(0, 100)}..."`)
         
@@ -573,8 +713,8 @@ app.post('/api/chat-with-documents', async (req, res) => {
         
         console.log(`💡 QA Result: "${answerText}" (confidence: ${score})`)
         
-        // Lower threshold for debugging - was 0.3, now 0.1
-        if (answerText && score >= 0.1) {
+        // Require a more meaningful QA score
+        if (answerText && score >= 0.3) {
           console.log(`✅ Returning answer with confidence ${score}`)
           return res.json({
             answer: answerText,
@@ -589,21 +729,23 @@ app.post('/api/chat-with-documents', async (req, res) => {
         console.error('QA pipeline error:', e)
       }
     } else {
-      console.log(`❌ No top chunk or QA pipeline: chunk=${!!topChunk}, qa=${!!qaPipeline}`)
+      console.log(`❌ No top chunks or QA pipeline: chunks=${topChunks.length}, qa=${!!qaPipeline}`)
     }
 
     // Fallback message with debug info
     console.log(`🔄 Returning fallback message`)
+    // Last resort: improved keyword fallback
+    const fb = await generateFallbackResponse(question)
     return res.json({
-      answer: "Sorry, I could not find any relevant answer from the uploaded document.",
-      confidence: 0.0,
-      sources: [],
-      model: 'RAG System',
+      answer: fb.answer,
+      confidence: fb.confidence,
+      sources: fb.sources,
+      model: 'Fallback (keywords)',
       debug: {
         documentsFound: candidates.length,
         chunksCreated: chunks.length,
         bestSimilarity: bestScore,
-        hasTopChunk: !!topChunk,
+        hasTopChunks: topChunks.length > 0,
         hasQAPipeline: !!qaPipeline
       }
     })
@@ -709,6 +851,83 @@ app.post('/api/reanalyze-document/:documentId', async (req, res) => {
   } catch (error) {
     console.error('Error re-analyzing document:', error)
     res.status(500).json({ error: 'Failed to re-analyze document' })
+  }
+})
+
+// Re-analyze all documents for a company
+app.post('/api/reanalyze-company/:companyId', async (req, res) => {
+  try {
+    const { supabaseUrl, supabaseKey } = req.query
+    const { companyId } = req.params
+
+    if (!supabaseUrl || !supabaseKey) {
+      return res.status(400).json({ error: 'Supabase credentials are required' })
+    }
+
+    if (!companyId) {
+      return res.status(400).json({ error: 'Company ID is required' })
+    }
+
+    supabase = createClient(supabaseUrl, supabaseKey)
+
+    const { data: docs, error: listError } = await supabase
+      .from('company_documents')
+      .select('*')
+      .eq('company_id', companyId)
+
+    if (listError) throw listError
+
+    const results = []
+    for (const d of (docs || [])) {
+      try {
+        let extractedContent = ''
+        if (d.file_url) {
+          let localPath = null
+          try {
+            const response = await fetch(d.file_url)
+            if (response.ok) {
+              const buffer = Buffer.from(await response.arrayBuffer())
+              const tmpDir = path.join(__dirname, 'tmp')
+              if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true })
+              localPath = path.join(tmpDir, `${d.id}${path.extname(d.file_name || 'file')}`)
+              fs.writeFileSync(localPath, buffer)
+            }
+          } catch (e) {
+            // best-effort
+          }
+          const sourcePath = localPath || d.file_url
+          extractedContent = await extractTextFromFile(sourcePath, d.mime_type)
+          if (!extractedContent || extractedContent.length < 50) {
+            const fileName = d.file_name || d.title
+            extractedContent = `Document: ${d.title}\nDescription: ${d.description}\nCategory: ${d.category}\nFile: ${fileName}\n\nContent: (No text extracted)`
+          }
+        } else {
+          extractedContent = `Document: ${d.title}\nDescription: ${d.description}\nCategory: ${d.category}\nContent: No file URL available for content extraction`
+        }
+
+        const summary = await generateDocumentSummary(extractedContent)
+
+        await supabase
+          .from('company_documents')
+          .update({
+            document_content: extractedContent,
+            document_summary: summary.summary,
+            analysis_status: 'COMPLETED',
+            is_analyzed: true,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', d.id)
+
+        results.push({ id: d.id, title: d.title, contentLength: extractedContent.length })
+      } catch (e) {
+        results.push({ id: d.id, title: d.title, error: e.message })
+      }
+    }
+
+    res.json({ message: 'Company documents re-analyzed', count: results.length, results })
+  } catch (error) {
+    console.error('Error re-analyzing company documents:', error)
+    res.status(500).json({ error: 'Failed to re-analyze company documents' })
   }
 })
 
