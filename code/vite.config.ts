@@ -19,27 +19,34 @@ export default defineConfig({
     proxy: {
       // Document QA API endpoints
       '/api/chat-history': {
-        target: 'http://localhost:3006',
+        target: 'http://localhost:3010',
         changeOrigin: true,
         secure: false
       },
       '/api/chat-with-documents': {
-        target: 'http://localhost:3006',
+        target: 'http://localhost:3010',
         changeOrigin: true,
         secure: false
       },
-      '/api/documents': {
-        target: 'http://localhost:3006',
+      '/api/company-documents': {
+        target: 'http://localhost:3010',
         changeOrigin: true,
         secure: false
       },
-      '/api/analyze-document': {
-        target: 'http://localhost:3006',
+      // legacy routes below can remain pointed to old services if still used
+      // New: DOCX preview and re-analyze endpoints served by document-qa-api.js (port 3010)
+      '/api/preview-docx': {
+        target: 'http://localhost:3010',
         changeOrigin: true,
         secure: false
       },
-      '/api/re-analyze-document': {
-        target: 'http://localhost:3006',
+      '/api/reanalyze-company': {
+        target: 'http://localhost:3010',
+        changeOrigin: true,
+        secure: false
+      },
+      '/api/reanalyze-document': {
+        target: 'http://localhost:3010',
         changeOrigin: true,
         secure: false
       },

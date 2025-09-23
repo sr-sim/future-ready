@@ -545,17 +545,7 @@
                 </button>
               </div>
             </div>
-            <div class="flex items-center justify-between mt-2">
-              <div class="flex space-x-2">
-                <button
-                  v-for="suggestion in quickSuggestions"
-                  :key="suggestion"
-                  @click="chatInput = suggestion"
-                  class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-xs transition-colors"
-                >
-                  {{ suggestion }}
-                </button>
-              </div>
+            <div class="flex items-center justify-end mt-2">
               <p class="text-xs text-gray-500">Press Enter to send</p>
             </div>
           </div>
@@ -691,6 +681,14 @@
             v-if="selectedDocument.file_type === '.pdf'"
             :src="selectedDocument.file_url"
             class="w-full h-full border-0 rounded-lg"
+            title="Document Viewer"
+          ></iframe>
+
+          <!-- DOCX Viewer via server-side HTML preview -->
+          <iframe
+            v-else-if="selectedDocument.file_type === '.docx'"
+            :src="getDocxPreviewUrl(selectedDocument)"
+            class="w-full h-full border-0 rounded-lg bg-white"
             title="Document Viewer"
           ></iframe>
           
@@ -884,7 +882,7 @@ const chatMessages = ref([
   }
 ])
 
-const quickSuggestions = ref(EnhancedDocumentService.getQuickSuggestions())
+
 
 // Onboarding tasks
 const onboardingTasks = ref([
@@ -1143,6 +1141,18 @@ const searchDocuments = async () => {
 const filterByCategory = (categoryName) => {
   console.log('Filter by category:', categoryName)
   // Implement category filtering
+}
+
+// Build preview URL for DOCX via server endpoint
+const getDocxPreviewUrl = (doc) => {
+  if (!doc || !doc.id) return ''
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || localStorage.getItem('supabaseUrl') || ''
+  const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || localStorage.getItem('supabaseKey') || ''
+  const params = new URLSearchParams({
+    supabaseUrl: supabaseUrl,
+    supabaseKey: supabaseKey
+  })
+  return `/api/preview-docx/${doc.id}?${params.toString()}`
 }
 
 const sendMessage = async () => {
