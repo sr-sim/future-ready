@@ -13,6 +13,10 @@
           </div>
           
           <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-2 bg-gray-100 px-3 py-2 rounded-lg">
+              <div class="h-2 w-2 bg-green-500 rounded-full"></div>
+              <span class="text-sm text-gray-700">{{ displayName }}</span>
+            </div>
             <div class="relative">
       
               <div
@@ -59,12 +63,7 @@
               </div>
             </div>
           
-                      <div class="flex items-center space-x-4">
-            <div class="flex items-center space-x-2 bg-gray-100 px-3 py-2 rounded-lg">
-              <div class="h-2 w-2 bg-green-500 rounded-full"></div>
-              <span class="text-sm text-gray-700">HR Manager</span>
-            </div>
-          </div>
+                      
           </div>
         </div>
       </div>
@@ -339,8 +338,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { supabase } from '../lib/supabase'
+import { ensureHrSession } from '../services/session'
 import { 
   FolderIcon, FileTextIcon, EyeIcon, SparklesIcon, TrashIcon, XIcon
 } from 'lucide-vue-next'
@@ -764,7 +764,39 @@ function cancelDelete() {
 }
 
 // Load documents when component mounts
-onMounted(() => {
-  loadCompanyDocuments()
+// Company display name
+const companyProfile = ref(null)
+const profileError = ref('')
+const displayName = computed(() => {
+  if (companyProfile.value?.company_name) return companyProfile.value.company_name
+  const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+  return currentUser?.email || 'HR Manager'
+})
+
+const loadHRCompanyProfile = async () => {
+  try {
+    profileError.value = ''
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+    if (!currentUser.id) throw new Error('User session not found')
+    const { data, error } = await supabase
+      .from('company_profiles')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .single()
+    if (error || !data) throw new Error('Failed to load company profile')
+    companyProfile.value = data
+    if (data.id) localStorage.setItem('companyId', data.id)
+  } catch (e) {
+    console.error('HR profile load error:', e)
+    profileError.value = 'Failed to load user profile. Please try again.'
+  }
+}
+
+onMounted(async () => {
+  try {
+    await ensureHrSession()
+    await loadHRCompanyProfile()
+    await loadCompanyDocuments()
+  } catch (e) {}
 })
 </script>

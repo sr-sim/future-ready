@@ -308,7 +308,7 @@
             <div class="flex items-center justify-between text-white">
               <div class="flex items-center">
                 <BriefcaseIcon class="h-6 w-6 mr-3" />
-                <h2 class="text-xl font-bold">Work Experience</h2>
+                <h2 class="text-xl font-bold">Working Experience</h2>
               </div>
               <button
                 type="button"
@@ -580,10 +580,10 @@
             Find Job Matches
           </button>
           <button
-            @click="showSaveSuccess = false"
+            @click="viewresume"
             class="bg-gray-100 text-gray-700 font-semibold py-2 px-6 rounded-xl hover:bg-gray-200 transition-all"
           >
-            Continue Editing
+            View Resume
           </button>
         </div>
       </div>
@@ -805,16 +805,11 @@ const saveResume = async () => {
       last_name: formData.value.personalInfo.fullName.split(' ').slice(1).join(' ') || '',
       phone: formData.value.personalInfo.phone,
       location: formData.value.personalInfo.location,
-      professional_title: formData.value.experience[0]?.title || '',
+      linkedin_url: formData.value.personalInfo.linkedin || null,
       summary: formData.value.summary,
       skills: formData.value.skills.split(',').map(skill => skill.trim()).filter(Boolean),
       experience: formData.value.experience,
       education: formData.value.education,
-      profile_visibility: 'PUBLIC',
-      allow_recruiter_contact: true,
-      email_notifications: true,
-      sms_notifications: false,
-      job_alerts: true,
       updated_at: new Date().toISOString()
     }
     
@@ -905,7 +900,7 @@ const loadSavedResume = async () => {
           email: currentUser.email || '',
           phone: profile.phone || '',
           location: profile.location || '',
-          linkedin: '' // Not stored in current schema
+          linkedin: profile.linkedin_url || ''
         },
         summary: profile.summary || '',
         experience: profile.experience || [
@@ -1088,12 +1083,12 @@ onMounted(async () => {
       if (!error && profile) {
         // Auto-populate form with existing data
         formData.value = {
-          personalInfo: {
+        personalInfo: {
             fullName: `${profile.first_name} ${profile.last_name}`.trim(),
             email: currentUser.email || '',
             phone: profile.phone || '',
             location: profile.location || '',
-            linkedin: '' // Not stored in current schema
+          linkedin: profile.linkedin_url || ''
           },
           summary: profile.summary || '',
           experience: profile.experience || [

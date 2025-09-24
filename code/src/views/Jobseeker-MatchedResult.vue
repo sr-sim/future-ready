@@ -228,9 +228,9 @@
               </div>
             </div>
 
-            <!-- Matching Skills -->
+            <!-- Matched Skills -->
             <div class="mb-4">
-              <h5 class="text-sm font-semibold text-gray-700 mb-2">Matching Skills:</h5>
+              <h5 class="text-sm font-semibold text-gray-700 mb-2">Matched Skills:</h5>
               <div class="flex flex-wrap gap-2">
                 <span
                   v-for="skill in company.matchingSkills"
@@ -267,10 +267,17 @@
               </div>
               <button 
                 @click="applyToJob(company)"
-                class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-6 py-2 rounded-xl font-semibold transition-all flex items-center"
+                :disabled="isApplied(company.id)"
+                :class="[
+                  'px-6 py-2 rounded-xl font-semibold transition-all flex items-center',
+                  isApplied(company.id)
+                    ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white'
+                ]"
               >
                 <SendIcon class="h-4 w-4 mr-2" />
-                Apply Now
+                <span v-if="!isApplied(company.id)">Apply Now</span>
+                <span v-else>Applied</span>
               </button>
             </div>
           </div>
@@ -366,6 +373,9 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { AIMatchingService } from '../services/aiMatchingService'
+import { supabase } from '../lib/supabase'
+import { ensureJobSeekerSession } from '../services/session'
 import { useRouter } from 'vue-router'
 import {
   TargetIcon,
@@ -408,6 +418,11 @@ const itemsPerPage = ref(5)
 // Modal
 const showApplicationModal = ref(false)
 const selectedCompany = ref(null)
+const appliedJobIds = ref(new Set())
+
+const isApplied = (jobId) => {
+  return appliedJobIds.value.has(jobId)
+}
 
 // Matching status
 const hasCompletedMatching = ref(false)
@@ -566,25 +581,51 @@ const saveJob = (companyId) => {
 }
 
 const applyToJob = (company) => {
+  if (isApplied(company.id)) return
   selectedCompany.value = company
   showApplicationModal.value = true
 }
 
-const confirmApplication = () => {
-  console.log('Apply to:', selectedCompany.value.name)
-  // Submit application
-  showApplicationModal.value = false
-  selectedCompany.value = null
-  
-  // Show success message (you could add a toast notification here)
-  alert(`Application submitted to ${selectedCompany.value?.name}!`)
+const confirmApplication = async () => {
+  try {
+    if (!selectedCompany.value || !matchingData.value?.profile) return
+    const jobPostingId = selectedCompany.value.id
+    const companyId = selectedCompany.value.companyId
+    const jobSeekerId = matchingData.value.profile.id
+    const payload = {
+      job_posting_id: jobPostingId,
+      job_seeker_id: jobSeekerId,
+      company_id: companyId
+    }
+
+    const { error } = await supabase.from('applications').insert(payload)
+    if (error) {
+      // Unique constraint (already applied)
+      const msg = (error.message || '').toLowerCase()
+      if (msg.includes('duplicate') || msg.includes('unique')) {
+        alert('You have already applied to this job.')
+      } else {
+        alert(`Failed to submit application: ${error.message}`)
+      }
+      return
+    }
+
+    // Mark as applied in UI
+    appliedJobIds.value.add(jobPostingId)
+    alert(`Application submitted to ${selectedCompany.value.name}!`)
+  } catch (e) {
+    alert(`Failed to submit application: ${e?.message || 'Unknown error'}`)
+  } finally {
+    showApplicationModal.value = false
+    selectedCompany.value = null
+  }
 }
 
 const goToMatching = () => {
   router.push('/jobmatch')
 }
 
-const loadMatchingResults = () => {
+const loadMatchingResults = async () => {
   try {
     const savedResults = localStorage.getItem('aiMatchingResults')
     if (savedResults) {
@@ -596,10 +637,12 @@ const loadMatchingResults = () => {
         userName.value = `${results.profile.first_name} ${results.profile.last_name}`
       }
       
-      // Load matching companies
+      // Enrich and format matches via service (adds company info and percent scores)
       if (results.matches && Array.isArray(results.matches)) {
-        allCompanies.value = results.matches.map(match => ({
+        const formatted = await AIMatchingService.formatJobMatches(results.matches, results.profile)
+        allCompanies.value = formatted.map(match => ({
           id: match.id,
+          companyId: match.companyId,
           name: match.name,
           industry: match.industry,
           location: match.location,
@@ -614,9 +657,17 @@ const loadMatchingResults = () => {
           description: match.description,
           requirements: match.requirements,
           responsibilities: match.responsibilities,
-          department: match.department,
           experienceLevel: match.experienceLevel
         }))
+
+        // Load already applied applications for this seeker and mark buttons
+        const { data: apps, error: appsErr } = await supabase
+          .from('applications')
+          .select('job_posting_id')
+          .eq('job_seeker_id', results.profile.id)
+        if (!appsErr && Array.isArray(apps)) {
+          appliedJobIds.value = new Set(apps.map(a => a.job_posting_id))
+        }
       }
       
       hasCompletedMatching.value = true
@@ -635,7 +686,8 @@ const checkMatchingStatus = () => {
   hasCompletedMatching.value = matchingCompleted === 'true'
 }
 
-onMounted(() => {
+onMounted(async () => {
+  try { await ensureJobSeekerSession() } catch (e) { return }
   checkMatchingStatus()
   loadMatchingResults()
 })

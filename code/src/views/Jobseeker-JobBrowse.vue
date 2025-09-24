@@ -239,14 +239,15 @@
 
             <!-- Required Skills -->
             <div class="mb-4">
-              <h5 class="text-sm font-semibold text-gray-700 mb-2">Required Skills:</h5>
+              <h5 class="text-sm font-semibold text-gray-700 mb-2">Required Skills (Hover the skills to know more):</h5>
               <div class="flex flex-wrap gap-2">
                 <span
-                  v-for="skill in job.requiredSkills"
-                  :key="skill"
+                  v-for="s in job.requiredSkills"
+                  :key="typeof s === 'string' ? s : s.name"
                   class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium"
+                  :title="typeof s === 'string' ? '' : s.description"
                 >
-                  {{ skill }}
+                  {{ typeof s === 'string' ? s : s.name }}
                 </span>
               </div>
             </div>
@@ -375,6 +376,8 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { ensureJobSeekerSession } from '../services/session'
+import { supabase } from '../lib/supabase'
 import {
   BriefcaseIcon,
   FilterIcon,
@@ -390,7 +393,7 @@ import {
 } from 'lucide-vue-next'
 
 // User data
-const userName = ref('John Doe')
+const userName = ref('')
 const userInitials = computed(() => {
   if (!userName.value) return ''
   return userName.value.split(' ').map(n => n[0]).join('')
@@ -413,99 +416,88 @@ const itemsPerPage = ref(5)
 const showApplicationModal = ref(false)
 const selectedJob = ref(null)
 
-// Sample job data - replace with actual API call
-const allJobs = ref([
-  {
-    id: 1,
-    position: 'Senior Software Engineer',
-    company: 'TechCorp Malaysia',
-    location: 'Kuala Lumpur',
-    jobType: 'Full-time',
-    experienceLevel: 'Senior Level',
-    salaryRange: 'RM 8,000 - RM 12,000',
-    postedDate: '2 days ago',
-    isNew: true,
-    department: 'Engineering',
-    description: 'We are looking for a Senior Software Engineer to join our dynamic team. You will be responsible for developing scalable web applications and mentoring junior developers.',
-    companyDescription: 'Leading technology company specializing in fintech solutions.',
-    requiredSkills: ['React', 'Node.js', 'TypeScript', 'AWS', 'MongoDB']
-  },
-  {
-    id: 2,
-    position: 'Digital Marketing Manager',
-    company: 'Creative Agency KL',
-    location: 'Kuala Lumpur',
-    jobType: 'Full-time',
-    experienceLevel: 'Mid Level',
-    salaryRange: 'RM 5,000 - RM 7,500',
-    postedDate: '1 week ago',
-    isNew: false,
-    department: 'Marketing',
-    description: 'Lead our digital marketing initiatives and develop comprehensive marketing strategies to drive brand awareness and customer acquisition.',
-    companyDescription: 'Award-winning creative agency serving clients across Southeast Asia.',
-    requiredSkills: ['Digital Marketing', 'SEO', 'Google Ads', 'Social Media', 'Analytics']
-  },
-  {
-    id: 3,
-    position: 'UX/UI Designer',
-    company: 'Design Studio',
-    location: 'Remote',
-    jobType: 'Contract',
-    experienceLevel: 'Mid Level',
-    salaryRange: 'RM 4,500 - RM 6,500',
-    postedDate: '3 days ago',
-    isNew: true,
-    department: 'Design',
-    description: 'Create intuitive and engaging user experiences for our mobile and web applications. Collaborate with product teams to deliver exceptional designs.',
-    companyDescription: 'Boutique design studio focused on user-centered design solutions.',
-    requiredSkills: ['Figma', 'Adobe Creative Suite', 'Prototyping', 'User Research', 'Wireframing']
-  },
-  {
-    id: 4,
-    position: 'Data Analyst',
-    company: 'Analytics Pro',
-    location: 'Johor Bahru',
-    jobType: 'Full-time',
-    experienceLevel: 'Entry Level',
-    salaryRange: 'RM 3,500 - RM 5,000',
-    postedDate: '5 days ago',
-    isNew: false,
-    department: 'Data Science',
-    description: 'Analyze complex datasets to provide actionable insights for business decision-making. Work with cross-functional teams to identify trends and opportunities.',
-    companyDescription: 'Data analytics consultancy helping businesses make data-driven decisions.',
-    requiredSkills: ['Python', 'SQL', 'Tableau', 'Excel', 'Statistics']
-  },
-  {
-    id: 5,
-    position: 'Product Manager',
-    company: 'StartupXYZ',
-    location: 'Kuala Lumpur',
-    jobType: 'Full-time',
-    experienceLevel: 'Senior Level',
-    salaryRange: 'RM 9,000 - RM 13,000',
-    postedDate: '1 day ago',
-    isNew: true,
-    department: 'Product',
-    description: 'Drive product strategy and roadmap for our SaaS platform. Work closely with engineering and design teams to deliver innovative solutions.',
-    companyDescription: 'Fast-growing startup revolutionizing the e-commerce industry.',
-    requiredSkills: ['Product Strategy', 'Agile', 'User Stories', 'Market Research', 'Analytics']
-  },
-  {
-    id: 6,
-    position: 'DevOps Engineer',
-    company: 'CloudTech Solutions',
-    location: 'Remote',
-    jobType: 'Full-time',
-    experienceLevel: 'Mid Level',
-    salaryRange: 'RM 7,000 - RM 10,000',
-    postedDate: '4 days ago',
-    isNew: false,
-    department: 'Infrastructure',
-    description: 'Manage and optimize our cloud infrastructure. Implement CI/CD pipelines and ensure system reliability and scalability.',
-    companyDescription: 'Cloud infrastructure provider serving enterprise clients.',
-    requiredSkills: ['AWS', 'Docker', 'Kubernetes', 'Jenkins', 'Terraform']
+const allJobs = ref([])
+
+const humanizeJobType = (value) => {
+  const v = String(value || '').toUpperCase()
+  switch (v) {
+    case 'FULL_TIME': return 'Full-time'
+    case 'PART_TIME': return 'Part-time'
+    case 'CONTRACT': return 'Contract'
+    case 'INTERNSHIP': return 'Internship'
+    case 'REMOTE': return 'Remote'
+    default: return value || ''
   }
-])
+}
+
+const humanizeExperience = (value) => {
+  const v = String(value || '').toUpperCase()
+  switch (v) {
+    case 'ENTRY_LEVEL': return 'Entry Level'
+    case 'MID_LEVEL': return 'Mid Level'
+    case 'SENIOR_LEVEL': return 'Senior Level'
+    case 'EXECUTIVE': return 'Executive'
+    default: return value || ''
+  }
+}
+
+const formatSalaryRange = (currency, min, max) => {
+  const prefix = currency === 'MYR' ? 'RM '
+    : ''
+  return `${prefix}${min} - ${prefix}${max}`
+}
+
+const isRecent = (createdAt) => {
+  const created = new Date(createdAt)
+  const diffDays = (Date.now() - created.getTime()) / (1000 * 60 * 60 * 24)
+  return diffDays <= 3
+}
+
+const loadPublishedJobs = async () => {
+  const { data, error } = await supabase
+    .from('job_postings')
+    .select('id, title, department, location, job_type, experience_level, salary_min, salary_max, currency, created_at, scope, company_id, company_profiles ( company_name )')
+    .eq('status', 'PUBLISHED')
+    .order('created_at', { ascending: false })
+  if (error) {
+    console.error('Failed to load jobs:', error)
+    allJobs.value = []
+    return
+  }
+
+  const jobs = data || []
+  const jobIds = jobs.map(j => j.id)
+  let jobIdToSkills = {}
+  if (jobIds.length > 0) {
+    const { data: reqs, error: reqErr } = await supabase
+      .from('job_posting_requirements')
+      .select('job_posting_id, skill, description')
+      .in('job_posting_id', jobIds)
+    if (!reqErr) {
+      jobIdToSkills = (reqs || []).reduce((acc, r) => {
+        if (!acc[r.job_posting_id]) acc[r.job_posting_id] = []
+        acc[r.job_posting_id].push({ name: r.skill, description: r.description || '' })
+        return acc
+      }, {})
+    }
+  }
+
+  allJobs.value = jobs.map(row => ({
+    id: row.id,
+    position: row.title,
+    company: row.company_profiles?.company_name || 'Company',
+    location: row.location,
+    jobType: humanizeJobType(row.job_type),
+    experienceLevel: humanizeExperience(row.experience_level),
+    salaryRange: formatSalaryRange(row.currency, row.salary_min, row.salary_max),
+    postedDate: new Date(row.created_at).toLocaleDateString(),
+    isNew: isRecent(row.created_at),
+    department: row.department,
+    description: row.scope,
+    companyDescription: '',
+    requiredSkills: jobIdToSkills[row.id] || []
+  }))
+}
 
 // Computed properties
 const filteredJobs = computed(() => {
@@ -661,13 +653,24 @@ const confirmApplication = () => {
   selectedJob.value = null
 }
 
-onMounted(() => {
-  // Load user data from localStorage or API
-  const userData = localStorage.getItem('userData')
-  if (userData) {
-    const user = JSON.parse(userData)
-    userName.value = `${user.firstName} ${user.lastName}`
+onMounted(async () => {
+  try {
+    await ensureJobSeekerSession()
+  } catch (e) {
+    return
   }
+  const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+  if (currentUser.id) {
+    try {
+      const { data: profile } = await (await import('../lib/supabase')).supabase
+        .from('job_seeker_profiles')
+        .select('first_name, last_name')
+        .eq('user_id', currentUser.id)
+        .single()
+      if (profile) userName.value = `${profile.first_name} ${profile.last_name}`.trim()
+    } catch {}
+  }
+  await loadPublishedJobs()
 })
 </script>
 

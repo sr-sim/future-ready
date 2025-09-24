@@ -26,7 +26,7 @@
                       <div class="flex items-center space-x-4">
             <div class="flex items-center space-x-2 bg-gray-100 px-3 py-2 rounded-lg">
               <div class="h-2 w-2 bg-green-500 rounded-full"></div>
-              <span class="text-sm text-gray-700">HR Manager</span>
+              <span class="text-sm text-gray-700">{{ displayName }}</span>
             </div>
           </div>
           </div>
@@ -191,10 +191,10 @@
                     getStatusColor(job.status)
                   ]"
                 >
-                  {{ job.status.charAt(0).toUpperCase() + job.status.slice(1) }}
+                  {{ statusLabel(job.status) }}
                 </span>
                 <div class="mt-2 text-sm text-gray-600">
-                  {{ job.applications }} applications
+                  {{ getApplicationsCount(job.id) }} applications
                 </div>
               </div>
             </div>
@@ -214,14 +214,15 @@
 
             <!-- Required Skills -->
             <div class="mb-4">
-              <h5 class="text-sm font-semibold text-gray-700 mb-2">Required Skills:</h5>
+              <h5 class="text-sm font-semibold text-gray-700 mb-2">Required Skills (Hover the skills to know more):</h5>
               <div class="flex flex-wrap gap-2">
                 <span
-                  v-for="skill in job.requiredSkills"
-                  :key="skill"
+                  v-for="s in job.requiredSkills"
+                  :key="typeof s === 'string' ? s : s.name"
                   class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium"
+                  :title="typeof s === 'string' ? '' : s.description"
                 >
-                  {{ skill }}
+                  {{ typeof s === 'string' ? s : s.name }}
                 </span>
               </div>
             </div>
@@ -234,7 +235,7 @@
                   class="text-blue-600 hover:text-blue-700 font-medium text-sm transition-colors flex items-center"
                 >
                   <UsersIcon class="h-4 w-4 mr-1" />
-                  View Applications ({{ job.applications }})
+                  View Applications ({{ getApplicationsCount(job.id) }})
                   <ChevronDownIcon class="h-4 w-4 ml-1" :class="{ 'rotate-180': activeDropdowns.applications === job.id }" />
                 </button>
 
@@ -273,12 +274,12 @@
                   @click="toggleJobStatus(job)"
                   :class="[
                     'px-4 py-2 rounded-lg font-medium text-sm transition-all',
-                    job.status === 'active' 
-                      ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' 
+                    job.status === 'published' 
+                      ? 'bg-red-100 text-red-700 hover:bg-red-200' 
                       : 'bg-green-100 text-green-800 hover:bg-green-200'
                   ]"
                 >
-                  {{ job.status === 'active' ? 'Pause' : 'Activate' }}
+                  {{ job.status === 'published' ? 'Pause' : 'Activate' }}
                 </button>
               </div>
             </div>
@@ -291,7 +292,7 @@
               <div class="p-6">
                 <div class="flex items-center justify-between mb-4">
                   <h4 class="font-semibold text-gray-900">Recent Applications</h4>
-                  <span class="text-sm text-gray-500">{{ job.applications }} total</span>
+                  <span class="text-sm text-gray-500">{{ getApplicationsCount(job.id) }} total</span>
                 </div>
                 <div class="space-y-3 max-h-64 overflow-y-auto">
                   <div
@@ -304,9 +305,29 @@
                         <span class="text-white text-xs font-semibold">{{ application.initials }}</span>
                       </div>
                       <div>
-                        <p class="font-medium text-gray-900 text-sm">{{ application.name }}</p>
+                        <p class="font-semibold text-gray-900 text-base">{{ application.name }}</p>
                         <p class="text-xs text-gray-500">{{ application.appliedDate }}</p>
                       </div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                      <button
+                        class="px-4 py-2 text-sm rounded-lg font-semibold bg-blue-100 text-blue-700 hover:bg-blue-200"
+                        @click="viewApplicantResume(application)"
+                      >
+                        View Resume
+                      </button>
+                      <button
+                        class="px-4 py-2 text-sm rounded-lg font-semibold bg-green-100 text-green-700 hover:bg-green-200"
+                        @click="updateApplicationStatus(application, 'SHORTLISTED')"
+                      >
+                        Shortlist
+                      </button>
+                      <button
+                        class="px-4 py-2 text-sm rounded-lg font-semibold bg-red-100 text-red-700 hover:bg-red-200"
+                        @click="openRejectModal(application)"
+                      >
+                        Reject
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -506,18 +527,13 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label class="block text-sm font-semibold text-gray-700 mb-2">Department *</label>
-              <select
+              <input
                 v-model="jobForm.department"
+                type="text"
                 required
                 class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-              >
-                <option value="">Select Department</option>
-                <option value="Engineering">Engineering</option>
-                <option value="Marketing">Marketing</option>
-                <option value="Sales">Sales</option>
-                <option value="HR">HR</option>
-                <option value="Finance">Finance</option>
-              </select>
+                placeholder="e.g. Engineering, Marketing, Operations"
+              />
             </div>
             <div>
               <label class="block text-sm font-semibold text-gray-700 mb-2">Location *</label>
@@ -721,11 +737,76 @@
         </div>
       </div>
     </div>
+  
+  <!-- Reject Reason Modal -->
+  <div
+    v-if="showRejectModal"
+    class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+  >
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8 relative">
+      <button @click="closeRejectModal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+        <XIcon class="h-6 w-6" />
+      </button>
+      <h2 class="text-2xl font-bold text-gray-900 mb-6">
+        Reject Candidate
+      </h2>
+
+      <form @submit.prevent="confirmReject" class="space-y-5">
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">To</label>
+          <input
+            type="text"
+            :value="rejectTarget?.name || 'Candidate'"
+            :placeholder="rejectTarget?.email || 'candidate@example.com'"
+            readonly
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 text-sm"
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Subject</label>
+          <input
+            type="text"
+            v-model="rejectSubject"
+            required
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm"
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Message</label>
+          <textarea
+            v-model="rejectReason"
+            rows="6"
+            required
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-y text-sm"
+            placeholder="Provide a brief reason for rejection to include in the email"
+          ></textarea>
+        </div>
+        <div class="flex justify-end gap-3">
+          <button
+            type="button"
+            @click="closeRejectModal"
+            class="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium text-sm"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium text-sm shadow-md"
+          >
+            Send Email
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { ensureHrSession } from '../services/session'
+import { supabase } from '../lib/supabase'
+import JobPostingService from '../services/jobPostingService'
 import {
   BriefcaseIcon,
   PlusIcon,
@@ -753,6 +834,34 @@ import { useRouter } from 'vue-router'
 // User data
 const userName = ref('John Smith')
 const userInitials = computed(() => userName.value.split(' ').map(n => n[0]).join(''))
+
+// Company display name
+const companyProfile = ref(null)
+const profileError = ref('')
+const displayName = computed(() => {
+  if (companyProfile.value?.company_name) return companyProfile.value.company_name
+  const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+  return currentUser?.email || 'HR Manager'
+})
+
+const loadHRCompanyProfile = async () => {
+  try {
+    profileError.value = ''
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+    if (!currentUser.id) throw new Error('User session not found')
+    const { data, error } = await supabase
+      .from('company_profiles')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .single()
+    if (error || !data) throw new Error('Failed to load company profile')
+    companyProfile.value = data
+    if (data.id) localStorage.setItem('companyId', data.id)
+  } catch (e) {
+    console.error('HR profile load error:', e)
+    profileError.value = 'Failed to load user profile. Please try again.'
+  }
+}
 
 // Modal state
 const showCreateModal = ref(false)
@@ -796,79 +905,8 @@ const isFormValid = computed(() => {
          jobForm.value.requirements.every(req => req.skill && req.score)
 })
 
-// Sample job data
-const allJobs = ref([
-  {
-    id: 1,
-    title: 'Senior Frontend Developer',
-    department: 'Engineering',
-    location: 'Puchong, Selangor',
-    jobType: 'Full-time',
-    salary: 'RM8000 - RM15000',
-    experience: 'Senior Level',
-    description: 'We are looking for a Senior Frontend Developer to join our innovative team building next-generation web applications.',
-    requiredSkills: ['React', 'TypeScript', 'JavaScript', 'CSS', 'Node.js'],
-    status: 'active',
-    applications: 24,
-    postedDate: '3 days ago'
-  },
-  {
-    id: 2,
-    title: 'Product Marketing Manager',
-    department: 'Marketing',
-    location: 'Johor Bahru, Johor',
-    jobType: 'Full-time',
-    salary: 'RM9000 - RM12000',
-    experience: 'Mid Level',
-    description: 'Join our marketing team to drive product adoption and create compelling marketing campaigns.',
-    requiredSkills: ['Marketing Strategy', 'Analytics', 'Content Creation', 'SEO'],
-    status: 'active',
-    applications: 18,
-    postedDate: '1 week ago'
-  },
-  {
-    id: 3,
-    title: 'Data Scientist',
-    department: 'Engineering',
-    location: 'Remote',
-    jobType: 'Full-time',
-    salary: 'RM11000 - RM14000',
-    experience: 'Mid Level',
-    description: 'Analyze complex data sets and build machine learning models to drive business insights.',
-    requiredSkills: ['Python', 'Machine Learning', 'SQL', 'Statistics', 'TensorFlow'],
-    status: 'paused',
-    applications: 31,
-    postedDate: '2 weeks ago'
-  },
-  {
-    id: 4,
-    title: 'UX Designer',
-    department: 'Engineering',
-    location: 'Bukit Jalil, Kuala Lumpur',
-    jobType: 'Contract',
-    salary: 'RM7000 - RM9000',
-    experience: 'Mid Level',
-    description: 'Create intuitive and beautiful user experiences for our web and mobile applications.',
-    requiredSkills: ['Figma', 'User Research', 'Prototyping', 'Design Systems'],
-    status: 'active',
-    applications: 12,
-    postedDate: '5 days ago'
-  },
-  {
-    id: 5,
-    title: 'Sales Development Representative',
-    department: 'Sales',
-    location: 'Damansara, Selangor',
-    jobType: 'Full-time',
-    salary: 'RM5000 - RM7000',
-    experience: 'Entry Level',
-    description: 'Generate new business opportunities and qualify leads for our sales team.',
-    requiredSkills: ['Sales', 'Communication', 'CRM', 'Lead Generation'],
-    status: 'closed',
-    applications: 45,
-    postedDate: '1 month ago'
-  }
-])
+// Jobs from database
+const allJobs = ref([])
 
 // Dropdown state management
 const activeDropdowns = ref({
@@ -879,20 +917,8 @@ const activeDropdowns = ref({
 // AI matching progress state
 const aiMatchingProgress = ref({})
 
-// Sample application data
-const sampleApplications = ref({
-  1: [
-    { id: 1, name: 'Sarah Johnson', initials: 'SJ', appliedDate: '2 days ago', status: 'new' },
-    { id: 2, name: 'Mike Chen', initials: 'MC', appliedDate: '3 days ago', status: 'reviewed' },
-    { id: 3, name: 'Emily Davis', initials: 'ED', appliedDate: '1 week ago', status: 'interviewed' },
-    { id: 4, name: 'Alex Rodriguez', initials: 'AR', appliedDate: '1 week ago', status: 'rejected' }
-  ],
-  2: [
-    { id: 5, name: 'Jessica Wong', initials: 'JW', appliedDate: '1 day ago', status: 'new' },
-    { id: 6, name: 'David Kim', initials: 'DK', appliedDate: '4 days ago', status: 'reviewed' },
-    { id: 7, name: 'Lisa Thompson', initials: 'LT', appliedDate: '5 days ago', status: 'interviewed' }
-  ]
-})
+// Applications loaded from database per job
+const applicationsByJob = ref({})
 
 // Sample AI match data
 const sampleAIMatches = ref({
@@ -1012,6 +1038,91 @@ const visiblePages = computed(() => {
   
   return pages
 })
+// Load jobs from database
+const loadJobs = async () => {
+  try {
+    const companyId = localStorage.getItem('companyId') || ''
+    if (!companyId) return
+    const rows = await JobPostingService.listJobs(companyId)
+    allJobs.value = rows
+    currentPage.value = 1
+  } catch (e) {
+    console.error('Failed to load jobs:', e)
+  }
+}
+
+// Prefetch applications for all listed jobs so counts are correct before expanding
+const prefetchApplicationsForJobs = async () => {
+  try {
+    const jobIds = allJobs.value.map(j => j.id)
+    if (jobIds.length === 0) return
+    const { data: apps, error: appsErr } = await supabase
+      .from('applications')
+      .select('id, job_posting_id, job_seeker_id, updated_at, status, job_seeker_profiles ( id, first_name, last_name, user_id )')
+      .in('job_posting_id', jobIds)
+    if (appsErr) throw appsErr
+
+    const applications = apps || []
+    if (applications.length === 0) {
+      // Initialize empty buckets
+      const empty = {}
+      for (const id of jobIds) empty[id] = []
+      applicationsByJob.value = { ...applicationsByJob.value, ...empty }
+      return
+    }
+
+    // Bulk fetch users for email
+    const userIds = Array.from(new Set(
+      applications.map(a => a.job_seeker_profiles?.user_id).filter(Boolean)
+    ))
+    let idToUserEmail = {}
+    if (userIds.length > 0) {
+      const { data: usersRows, error: usersErr } = await supabase
+        .from('users')
+        .select('id, email')
+        .in('id', userIds)
+      if (usersErr) throw usersErr
+      idToUserEmail = Object.fromEntries((usersRows || []).map(u => [u.id, u.email]))
+    }
+
+    // Group by job and map to UI rows
+    const grouped = {}
+    for (const id of jobIds) grouped[id] = []
+    for (const row of applications) {
+      const prof = row.job_seeker_profiles || {}
+      const first = prof.first_name || ''
+      const last = prof.last_name || ''
+      const email = prof.user_id ? (idToUserEmail[prof.user_id] || '') : ''
+      const name = `${first} ${last}`.trim() || 'Candidate'
+      const item = {
+        id: row.id,
+        jobSeekerId: row.job_seeker_id,
+        name,
+        email,
+        initials: formatInitials(first, last),
+        appliedDate: formatRelative(row.updated_at),
+        status: row.status || 'SUBMITTED'
+      }
+      if (!grouped[row.job_posting_id]) grouped[row.job_posting_id] = []
+      grouped[row.job_posting_id].push(item)
+    }
+    applicationsByJob.value = { ...applicationsByJob.value, ...grouped }
+  } catch (e) {
+    console.error('Failed to prefetch applications:', e)
+  }
+}
+
+onMounted(async () => {
+  try {
+    await ensureHrSession()
+    await loadHRCompanyProfile()
+    await loadJobs()
+    await prefetchApplicationsForJobs()
+  } catch (e) {
+    // ensureHrSession will redirect if needed
+  }
+})
+
 
 // Methods
 const applyFilters = () => {
@@ -1020,21 +1131,104 @@ const applyFilters = () => {
 
 const getStatusColor = (status) => {
   switch (status) {
-    case 'active':
+    case 'published':
       return 'bg-green-100 text-green-800'
     case 'paused':
-      return 'bg-yellow-100 text-yellow-800'
-    case 'closed':
-      return 'bg-red-100 text-red-800'
-    case 'draft':
-      return 'bg-gray-100 text-gray-800'
+      return 'bg-red-100 text-red-700'
+    case 'pending':
     default:
       return 'bg-gray-100 text-gray-800'
   }
 }
 
+const statusLabel = (status) => {
+  switch (status) {
+    case 'published': return 'Published'
+    case 'paused': return 'Paused'
+    case 'pending':
+    default: return 'Pending'
+  }
+}
+
 const getJobApplications = (jobId) => {
-  return sampleApplications.value[jobId] || []
+  const list = applicationsByJob.value[jobId] || []
+  return list.filter(a => (a.status || '').toUpperCase() === 'SUBMITTED')
+}
+
+const getApplicationsCount = (jobId) => {
+  return getJobApplications(jobId).length
+}
+
+const formatInitials = (first, last) => {
+  const a = (first || '').trim(); const b = (last || '').trim();
+  return `${a[0] || ''}${b[0] || ''}`.toUpperCase()
+}
+
+const formatRelative = (iso) => {
+  if (!iso) return ''
+  const date = new Date(iso)
+  const now = new Date()
+  const diff = Math.floor((now - date) / (1000 * 60 * 60 * 24))
+  if (diff <= 0) return 'Today'
+  if (diff === 1) return '1 day ago'
+  if (diff < 7) return `${diff} days ago`
+  if (diff < 30) return `${Math.floor(diff / 7)} weeks ago`
+  return `${Math.floor(diff / 30)} months ago`
+}
+
+const fetchApplicationsForJob = async (jobId) => {
+  try {
+    // 1) Fetch applications for the job
+    const { data: apps, error: appsErr } = await supabase
+      .from('applications')
+      .select('id, job_seeker_id, updated_at, status, job_seeker_profiles ( id, first_name, last_name, user_id )')
+      .eq('job_posting_id', jobId)
+      .order('updated_at', { ascending: false })
+    if (appsErr) throw appsErr
+
+    const applications = apps || []
+    if (applications.length === 0) {
+      applicationsByJob.value = { ...applicationsByJob.value, [jobId]: [] }
+      return
+    }
+
+    // 2) Fetch users for email
+    const userIds = Array.from(new Set(
+      applications.map(a => a.job_seeker_profiles?.user_id).filter(Boolean)
+    ))
+    let idToUserEmail = {}
+    if (userIds.length > 0) {
+      const { data: usersRows, error: usersErr } = await supabase
+        .from('users')
+        .select('id, email')
+        .in('id', userIds)
+      if (usersErr) throw usersErr
+      idToUserEmail = Object.fromEntries((usersRows || []).map(u => [u.id, u.email]))
+    }
+
+    // 3) Map to UI rows
+    const rows = applications.map(row => {
+      const prof = row.job_seeker_profiles || {}
+      const first = prof.first_name || ''
+      const last = prof.last_name || ''
+      const email = prof.user_id ? (idToUserEmail[prof.user_id] || '') : ''
+      const name = `${first} ${last}`.trim() || 'Candidate'
+      return {
+        id: row.id,
+        jobSeekerId: row.job_seeker_id,
+        name,
+        email,
+        initials: formatInitials(first, last),
+        appliedDate: formatRelative(row.updated_at),
+        status: row.status || 'SUBMITTED'
+      }
+    })
+
+    applicationsByJob.value = { ...applicationsByJob.value, [jobId]: rows }
+  } catch (e) {
+    console.error('Failed to load applications:', e)
+    applicationsByJob.value = { ...applicationsByJob.value, [jobId]: [] }
+  }
 }
 
 const getAIMatches = (jobId) => {
@@ -1084,6 +1278,81 @@ const toggleApplicationsDropdown = (jobId) => {
   } else {
     activeDropdowns.value.applications = jobId
     activeDropdowns.value.aiMatch = null
+    if (!applicationsByJob.value[jobId]) {
+      fetchApplicationsForJob(jobId)
+    }
+  }
+}
+
+const viewApplicantResume = async (application) => {
+  try {
+    // Navigate to resume view with candidateId
+    router.push({ name: 'ViewResume', query: { candidateId: application.jobSeekerId } })
+  } catch (e) {
+    console.error('Failed to open resume:', e)
+  }
+}
+
+const updateApplicationStatus = async (application, nextStatus) => {
+  try {
+    const { error } = await supabase
+      .from('applications')
+      .update({ status: nextStatus, updated_at: new Date().toISOString() })
+      .eq('id', application.id)
+    if (error) throw error
+    // Update UI state
+    const jobId = activeDropdowns.value.applications
+    if (jobId && applicationsByJob.value[jobId]) {
+      const rows = applicationsByJob.value[jobId].map(a => a.id === application.id ? { ...a, status: nextStatus } : a)
+      applicationsByJob.value = { ...applicationsByJob.value, [jobId]: rows }
+    }
+    if (nextStatus === 'SHORTLISTED') {
+      alert('The candidate is being shortlisted')
+    }
+  } catch (e) {
+    console.error('Failed to update application status:', e)
+    alert(`Failed to update status: ${e?.message || e}`)
+  }
+}
+
+// Reject modal
+const showRejectModal = ref(false)
+const rejectTarget = ref(null)
+const rejectReason = ref('')
+const rejectSubject = ref('Interview Result: Application Rejected')
+
+const openRejectModal = (application) => {
+  rejectTarget.value = application
+  rejectReason.value = ''
+  rejectSubject.value = 'Interview Result: Application Rejected'
+  showRejectModal.value = true
+}
+
+const closeRejectModal = () => {
+  showRejectModal.value = false
+  rejectTarget.value = null
+  rejectReason.value = ''
+  rejectSubject.value = 'Interview Result: Application Rejected'
+}
+
+const confirmReject = async () => {
+  if (!rejectTarget.value) return
+  try {
+    const { error } = await supabase
+      .from('applications')
+      .update({ status: 'REJECTED', updated_at: new Date().toISOString() })
+      .eq('id', rejectTarget.value.id)
+    if (error) throw error
+    const jobId = activeDropdowns.value.applications
+    if (jobId && applicationsByJob.value[jobId]) {
+      const rows = applicationsByJob.value[jobId].map(a => a.id === rejectTarget.value.id ? { ...a, status: 'REJECTED' } : a)
+      applicationsByJob.value = { ...applicationsByJob.value, [jobId]: rows }
+    }
+    closeRejectModal()
+    alert('The candidate is being rejected. Rejection E-mail sent successfully')
+  } catch (e) {
+    console.error('Reject failed:', e)
+    alert(`Failed to reject: ${e?.message || e}`)
   }
 }
 
@@ -1111,11 +1380,18 @@ const editJob = (job) => {
   showCreateModal.value = true
 }
 
-const toggleJobStatus = (job) => {
-  if (job.status === 'active') {
-    job.status = 'paused'
-  } else if (job.status === 'paused') {
-    job.status = 'active'
+const toggleJobStatus = async (job) => {
+  try {
+    const current = job.status // 'pending' | 'published' | 'paused'
+    const nextUi = current === 'published' ? 'paused' : 'published'
+    const updated = await JobPostingService.updateJobStatus(job.id, nextUi)
+    // Reflect in UI
+    // Map DB back to UI
+    const dbStatus = String(updated.status || '').toUpperCase()
+    job.status = dbStatus === 'PUBLISHED' ? 'published' : dbStatus === 'PAUSED' ? 'paused' : 'pending'
+  } catch (e) {
+    console.error('Failed to update job status:', e)
+    alert(`Failed to update status: ${e?.message || e}`)
   }
 }
 
@@ -1149,55 +1425,27 @@ const closeModal = () => {
 
 const saveJob = async () => {
   isSaving.value = true
-  
-  // Simulate API call
-  await new Promise(resolve => setTimeout(resolve, 1000))
-  
-  const newJobData = {
-    ...jobForm.value,
-    totalScore: totalScore.value,
-    requiredSkills: jobForm.value.requirements.map(req => req.skill).filter(skill => skill)
-  }
-
-  if (editingJob.value) {
-    const index = allJobs.value.findIndex(job => job.id === editingJob.value.id)
-    if (index !== -1) {
-      allJobs.value[index] = {
-        ...allJobs.value[index],
-        title: newJobData.title,
-        department: newJobData.department,
-        location: newJobData.location,
-        jobType: newJobData.jobType,
-        salary: newJobData.salary,
-        experience: newJobData.experience,
-        description: newJobData.scope,
-        requiredSkills: newJobData.requiredSkills,
-        totalScore: newJobData.totalScore,
-        requirements: newJobData.requirements
-      }
+  try {
+    if (editingJob.value) {
+      // Update existing job
+      const updated = await JobPostingService.updateJobPosting(editingJob.value.id, jobForm.value)
+      // Reload from DB to reflect job_posting_requirements skills
+      await loadJobs()
+      editingJob.value = null
+      closeModal()
+    } else {
+      // Create new job
+      const created = await JobPostingService.createJobPosting(jobForm.value, localStorage.getItem('companyId') || '')
+      // Reload from DB to reflect job_posting_requirements skills
+      await loadJobs()
+      closeModal()
     }
-  } else {
-    const newJob = {
-      id: Date.now(),
-      title: newJobData.title,
-      department: newJobData.department,
-      location: newJobData.location,
-      jobType: newJobData.jobType,
-      salary: newJobData.salary,
-      experience: newJobData.experience,
-      description: newJobData.scope,
-      requiredSkills: newJobData.requiredSkills,
-      totalScore: newJobData.totalScore,
-      requirements: newJobData.requirements,
-      status: 'active',
-      applications: 0,
-      postedDate: 'Just now'
-    }
-    allJobs.value.unshift(newJob)
+  } catch (e) {
+    console.error('Failed to create job posting:', e)
+    alert(`Failed to save job: ${e?.message || e}`)
+  } finally {
+    isSaving.value = false
   }
-  
-  isSaving.value = false
-  closeModal()
 }
 
 const duplicateJob = (job) => {
@@ -1226,18 +1474,18 @@ const deleteJob = async () => {
   if (!jobToDelete.value) return
   
   isDeleting.value = true
-  
-  // Simulate API call
-  await new Promise(resolve => setTimeout(resolve, 1000))
-  
-  const index = allJobs.value.findIndex(job => job.id === jobToDelete.value.id)
-  if (index !== -1) {
-    allJobs.value.splice(index, 1)
+  try {
+    await JobPostingService.deleteJobPosting(jobToDelete.value.id)
+    const index = allJobs.value.findIndex(job => job.id === jobToDelete.value.id)
+    if (index !== -1) allJobs.value.splice(index, 1)
+  } catch (e) {
+    console.error('Delete job failed:', e)
+    alert(`Failed to delete job: ${e?.message || e}`)
+  } finally {
+    isDeleting.value = false
+    showDeleteModal.value = false
+    jobToDelete.value = null
   }
-  
-  isDeleting.value = false
-  showDeleteModal.value = false
-  jobToDelete.value = null
 }
 
 const router = useRouter()
