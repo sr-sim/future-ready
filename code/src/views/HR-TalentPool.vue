@@ -9,8 +9,9 @@
               <UsersIcon class="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 class="text-xl font-bold text-gray-900">Talent Pool</h1>
-              <p class="text-sm text-gray-500">Browse all job seekers in the system</p>
+              <h1 class="text-xl font-bold text-gray-900">Talent Pool</h1> 
+              <!-- Updated header to show current match filter -->
+              <p class="text-sm text-gray-500">Talents matched {{ selectedMatchScore }}%+ score</p>
             </div>
           </div>
           <div class="flex items-center space-x-4">
@@ -39,6 +40,17 @@
             </div>
           </div>
           <div class="flex gap-3 flex-wrap">
+            <!-- Added match score filter dropdown -->
+            <select
+              v-model="selectedMatchScore"
+              class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            >
+              <option value="60">60%+ Match</option>
+              <option value="70">70%+ Match</option>
+              <option value="80">80%+ Match</option>
+              <option value="90">90%+ Match</option>
+              <option value="95">95%+ Match</option>
+            </select>
             <select
               v-model="selectedExperienceLevel"
               class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
@@ -65,54 +77,6 @@
         </div>
       </div>
 
-      <!-- Stats Bar -->
-      <!-- <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
-          <div class="flex items-center">
-            <div class="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
-              <UsersIcon class="h-6 w-6 text-blue-600" />
-            </div>
-            <div>
-              <p class="text-2xl font-bold text-gray-900">{{ totalCandidates }}</p>
-              <p class="text-sm text-gray-500">Total Candidates</p>
-            </div>
-          </div>
-        </div>
-        <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
-          <div class="flex items-center">
-            <div class="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center mr-4">
-              <TrendingUpIcon class="h-6 w-6 text-green-600" />
-            </div>
-            <div>
-              <p class="text-2xl font-bold text-gray-900">{{ filteredCandidates.length }}</p>
-              <p class="text-sm text-gray-500">Matching Filters</p>
-            </div>
-          </div>
-        </div>
-        <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
-          <div class="flex items-center">
-            <div class="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
-              <MailIcon class="h-6 w-6 text-purple-600" />
-            </div>
-            <div>
-              <p class="text-2xl font-bold text-gray-900">{{ contactedCount }}</p>
-              <p class="text-sm text-gray-500">Contacted This Month</p>
-            </div>
-          </div>
-        </div>
-        <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
-          <div class="flex items-center">
-            <div class="h-12 w-12 bg-yellow-100 rounded-lg flex items-center justify-center mr-4">
-              <StarIcon class="h-6 w-6 text-yellow-600" />
-            </div>
-            <div>
-              <p class="text-2xl font-bold text-gray-900">{{ topTalentCount }}</p>
-              <p class="text-sm text-gray-500">Top Talent</p>
-            </div>
-          </div>
-        </div>
-      </div> -->
-
       <!-- Candidate Grid -->
       <div class="grid grid-cols-1 lg:grid-cols-1 gap-6">
         <div
@@ -134,11 +98,16 @@
                 </div>
               </div>
               <div class="text-right">
+                <!-- Added match score display -->
                 <div class="flex items-center justify-end mb-1">
+                  <span :class="getTalentBadgeClass(candidate.talentScore)" class="px-3 py-1 rounded-full text-xs font-semibold">
+                    {{ candidate.talentScore }}% Match
+                  </span>
                 </div>
                 <p class="text-xs text-gray-500">Last active: {{ candidate.lastActive }}</p>
               </div>
             </div>
+
 
             <!-- Skills -->
             <div class="mb-4">
@@ -180,7 +149,6 @@
             <!-- Actions -->
             <div class="flex justify-between items-center pt-4 border-t border-gray-100">
               <div class="flex gap-2">
-               
                 <RouterLink
                   :to="{ name: 'ViewResume', query: { candidateId: candidate.id } }"
                   class="flex items-center px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm font-medium"
@@ -218,6 +186,7 @@
         <p class="text-gray-500">Try adjusting your search criteria or filters</p>
       </div>
     </div>
+
 
     <!-- Express Interest Modal -->
     <div v-if="showInterestModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -320,6 +289,7 @@ import {
   XIcon,
   LoaderIcon
 } from 'lucide-vue-next'
+
 
 // Sample candidate data - in real app this would come from API
 const allCandidates = ref([
@@ -449,6 +419,8 @@ const allCandidates = ref([
 const searchQuery = ref('')
 const selectedExperienceLevel = ref('')
 const selectedSkillFilter = ref('')
+const selectedMatchScore = ref(80)
+
 
 // Modal states
 const showInterestModal = ref(false)
@@ -469,6 +441,8 @@ const topTalentCount = computed(() => allCandidates.value.filter(c => c.talentSc
 
 const filteredCandidates = computed(() => {
   let filtered = allCandidates.value
+
+  filtered = filtered.filter(candidate => candidate.talentScore >= selectedMatchScore.value)
 
   // Search filter
   if (searchQuery.value) {
@@ -514,17 +488,6 @@ const getTalentBadgeClass = (score) => {
   return 'bg-gray-100 text-gray-800'
 }
 
-const getTalentLabel = (score) => {
-  if (score >= 90) return 'Top Talent'
-  if (score >= 80) return 'High Potential'
-  if (score >= 70) return 'Good Match'
-  return 'Potential'
-}
-
-const viewProfile = (candidate) => {
-  console.log('View profile for:', candidate.name)
-  // Navigate to detailed profile view
-}
 
 const openInterestModal = (candidate) => {
   selectedCandidate.value = candidate
