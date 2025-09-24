@@ -8,6 +8,128 @@ export class AIMatchingService {
     return (skill || '').toString().trim().toLowerCase()
   }
 
+  // Perform AI matching for a specific job against its applicants
+  static async performCandidateMatchingForJob(jobPostingId, limit = 50) {
+    try {
+      // 1) Load job posting and its requirements
+      const { data: job, error: jobErr } = await supabase
+        .from('job_postings')
+        .select('id, company_id, title, description, scope, job_type, experience_level, salary_min, salary_max, location, status, created_at')
+        .eq('id', jobPostingId)
+        .single()
+      if (jobErr) throw jobErr
+
+      const { data: reqs, error: reqErr } = await supabase
+        .from('job_posting_requirements')
+        .select('job_posting_id, skill, description, score')
+        .eq('job_posting_id', jobPostingId)
+      if (reqErr) throw reqErr
+
+      const requirementList = (reqs || []).map(r => ({
+        skillNorm: this._normalizeSkill(r.skill),
+        skillOrig: r.skill,
+        description: r.description,
+        score: Number.isFinite(r.score) ? r.score : 0
+      }))
+
+      // 2) Build job embedding text and generate embedding
+      const jobText = [
+        job.title,
+        job.scope,
+        job.description,
+        requirementList.map(x => x.skillOrig || x.skillNorm).join(', ')
+      ].filter(Boolean).join('\n\n')
+      const jobEmbedding = await this._getEmbeddingForText(jobText)
+
+      // 3) Load applicants for this job (applications → job_seeker_profiles)
+      const { data: apps, error: appErr } = await supabase
+        .from('applications')
+        .select('job_seeker_profiles ( id, first_name, last_name, phone, location, summary, skills, experience, education, updated_at )')
+        .eq('job_posting_id', jobPostingId)
+        .eq('status', 'SUBMITTED')
+        .eq('email_status', 'NOT_SENT')
+      if (appErr) throw appErr
+
+      const applicants = (apps || [])
+        .map(a => a.job_seeker_profiles)
+        .filter(Boolean)
+
+      if (applicants.length === 0) {
+        return { job, matches: [], totalApplicants: 0 }
+      }
+
+      // 4) Compute match scores for each applicant
+      const matches = []
+      for (const profile of applicants) {
+        // Candidate text
+        const experienceText = Array.isArray(profile.experience)
+          ? profile.experience.map(exp => `${exp.title || ''} ${exp.company || ''} ${exp.description || ''}`).join('\n')
+          : ''
+        const educationText = Array.isArray(profile.education)
+          ? profile.education.map(edu => `${edu.degree || ''} ${edu.field || ''} ${edu.institution || ''}`).join('\n')
+          : ''
+        const rawSkills = Array.isArray(profile.skills) ? profile.skills : (profile.skills ? Object.values(profile.skills) : [])
+        const candidateSkillsSet = new Set(
+          rawSkills
+            .map(s => (typeof s === 'string' ? s : (s?.name || s?.skill || '')))
+            .filter(Boolean)
+            .map(this._normalizeSkill)
+        )
+        const candidateText = [
+          profile.first_name,
+          profile.last_name,
+          profile.summary,
+          [...candidateSkillsSet].join(', '),
+          experienceText,
+          educationText
+        ].filter(Boolean).join('\n\n')
+
+        // Embedding similarity
+        const candidateEmbedding = await this._getEmbeddingForText(candidateText)
+        const sim = this._cosineSimilarity(candidateEmbedding, jobEmbedding)
+        const embeddingPercent = Math.max(0, Math.min(100, Math.round(sim * 100)))
+
+        // Weighted skills overlap
+        let totalWeight = 0
+        let matchedWeight = 0
+        const matchingSkills = []
+        for (const r of requirementList) {
+          totalWeight += r.score
+          const { credit, label } = this._computePartialCredit(r.skillOrig || r.skillNorm, candidateSkillsSet)
+          if (credit > 0) {
+            matchedWeight += r.score * credit
+            if (!matchingSkills.includes(label)) matchingSkills.push(label)
+          }
+        }
+        const matchPercent = totalWeight > 0 ? Math.round((matchedWeight / totalWeight) * 100) : 0
+
+        // Final blend
+        const finalScore = Math.round(0.6 * embeddingPercent + 0.4 * matchPercent)
+
+        matches.push({
+          job_seeker_id: profile.id,
+          name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim(),
+          location: profile.location,
+          matchScore: finalScore,
+          embeddingPercent,
+          skillsPercent: matchPercent,
+          matchingSkills,
+          updated_at: profile.updated_at
+        })
+      }
+
+      // 5) Sort and limit
+      matches.sort((a, b) => b.matchScore - a.matchScore)
+      const top = matches.slice(0, limit)
+
+      return { job, matches: top, totalApplicants: applicants.length }
+
+    } catch (error) {
+      console.error('Error performing candidate matching for job:', error)
+      throw error
+    }
+  }
+
   static _cosineSimilarity(a, b) {
     if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length || a.length === 0) return 0
     let dot = 0
@@ -90,7 +212,8 @@ export class AIMatchingService {
       for (const term of expanded) {
         if (!term) continue
         if (cand.includes(term) || term.includes(cand)) {
-          return { credit: 0.5, label: `${reqSkill} (partial)` }
+          // Keep original label without the "(partial)" suffix
+          return { credit: 0.5, label: reqSkill }
         }
       }
     }
@@ -297,7 +420,7 @@ export class AIMatchingService {
       matches.sort((a, b) => b.similarity_score - a.similarity_score)
       const topMatches = matches.slice(0, limit)
       const totalMatches = topMatches.length
-      const highMatches = topMatches.filter(m => Math.round(m.similarity_score * 100) >= 80).length
+      const highMatches = topMatches.filter(m => Math.round(m.similarity_score * 100) >= 70).length
       const averageScore = totalMatches > 0 ? Math.round(topMatches.reduce((s, m) => s + Math.round(m.similarity_score * 100), 0) / totalMatches) : 0
 
       return {
@@ -383,7 +506,9 @@ export class AIMatchingService {
           matchingSkills = match.matching_skills
         } else {
           const profileSkills = Array.isArray(profile.skills) ? profile.skills : []
-          const reqSkills = Array.isArray(match.requirements) ? match.requirements.map(r => r.skill) : (match.tags || [])
+          const reqSkills = Array.isArray(match.requirements)
+            ? match.requirements.map(r => r?.skillOrig || r?.skillNorm || r?.skill || '')
+            : (match.tags || [])
           matchingSkills = this.calculateMatchingSkills(profileSkills, reqSkills)
         }
 
@@ -429,8 +554,13 @@ export class AIMatchingService {
       return []
     }
 
-    const profileSkillsLower = profileSkills.map(skill => skill.toLowerCase())
-    const jobSkillsLower = jobSkills.map(skill => skill.toLowerCase())
+    const toSafeLower = (v) => (typeof v === 'string' ? v.toLowerCase() : (v?.name || v?.skill || '').toLowerCase())
+    const profileSkillsLower = profileSkills
+      .map(toSafeLower)
+      .filter(Boolean)
+    const jobSkillsLower = jobSkills
+      .map(toSafeLower)
+      .filter(Boolean)
 
     return jobSkillsLower.filter(skill => 
       profileSkillsLower.some(profileSkill => 

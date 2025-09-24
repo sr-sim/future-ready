@@ -431,6 +431,23 @@
             </div>
           </div>
 
+          <!-- Prompt Suggestions -->
+          <div class="px-6 pt-4">
+            <div class="bg-blue-50 border border-blue-200 rounded-xl p-3">
+              <p class="text-xs font-semibold text-blue-800 mb-2">You can ask questions like:</p>
+              <div class="flex flex-wrap gap-2">
+                <button
+                  v-for="p in suggestedPrompts"
+                  :key="p"
+                  @click="usePrompt(p)"
+                  class="text-xs px-3 py-1 rounded-full bg-white text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors"
+                >
+                  {{ p }}
+                </button>
+              </div>
+            </div>
+          </div>
+
           <!-- Chat Messages -->
           <div class="flex-1 overflow-y-auto p-6 space-y-4" ref="chatContainer">
             <div
@@ -470,33 +487,9 @@
                   <div class="flex-1">
                     <p class="text-sm">{{ message.content }}</p>
                     
-                    <!-- Show sources if available -->
-                    <div v-if="message.hasSources && message.sources && message.sources.length > 0" class="mt-2">
-                      <p class="text-xs text-gray-600 mb-1">Sources:</p>
-                      <div class="flex flex-wrap gap-1">
-                        <span 
-                          v-for="source in message.sources" 
-                          :key="source"
-                          class="bg-green-200 text-green-800 px-2 py-1 rounded-full text-xs"
-                        >
-                          {{ source }}
-                        </span>
-                      </div>
-                    </div>
                     
-                    <!-- Show confidence score -->
-                    <div v-if="message.confidence !== undefined" class="mt-2">
-                      <div class="flex items-center space-x-2">
-                        <span class="text-xs text-gray-600">Confidence:</span>
-                        <div class="flex-1 bg-gray-200 rounded-full h-1.5">
-                          <div 
-                            class="bg-green-500 h-1.5 rounded-full transition-all duration-300"
-                            :style="{ width: `${message.confidence * 100}%` }"
-                          ></div>
-                        </div>
-                        <span class="text-xs text-gray-600">{{ Math.round(message.confidence * 100) }}%</span>
-                      </div>
-                    </div>
+                    
+                    
                     
                     <p class="text-xs text-gray-500 mt-2">{{ message.timestamp }}</p>
                   </div>
@@ -901,6 +894,21 @@ const chatMessages = ref([
 ])
 
 
+// Suggested prompts for AI assistant
+const suggestedPrompts = ref([
+  'What is the remote work policy?',
+  'How much vacation time do I get?',
+  'Summarize the IT security guidelines',
+  'Where can I find the onboarding checklist?',
+  'What benefits are available to me?'
+])
+
+const usePrompt = (text) => {
+  chatInput.value = text
+  sendMessage()
+}
+
+
 
 // Onboarding tasks
 const onboardingTasks = ref([
@@ -1252,9 +1260,7 @@ const sendMessage = async () => {
       sender: 'bot',
       content: response.answer,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      confidence: response.confidence,
-      sources: response.sources,
-      hasSources: response.sources && response.sources.length > 0
+      
     }
     
     chatMessages.value.push(botMessage)
