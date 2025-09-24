@@ -16,7 +16,7 @@
           <div class="flex items-center space-x-4">
             <div class="flex items-center space-x-2 bg-gray-100 px-3 py-2 rounded-lg">
               <div class="h-2 w-2 bg-green-500 rounded-full"></div>
-              <span class="text-sm text-gray-700">HR Manager</span>
+              <span class="text-sm text-gray-700">{{ displayName }}</span>
             </div>
           </div>
         </div>  
@@ -322,7 +322,9 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { ensureHrSession } from '../services/session'
+import { supabase } from '../lib/supabase'
 import { 
   UserIcon, 
   TrashIcon, 
@@ -344,52 +346,7 @@ const FILTERS = [
 
 const selectedFilter = ref('all')
 
-const onboardingEmployees = ref([
-  {
-    id: 'e1',
-    name: 'Alice Johnson',
-    email: 'alice.johnson@company.com',
-    position: 'Frontend Developer',
-    department: 'Engineering',
-    status: 'Completed',
-    progress: 100,
-    startDate: 'Aug 1, 2025',
-    completedTasks: ['Documentation', 'IT Setup', 'Team Introduction', 'Training']
-  },
-  {
-    id: 'e2',
-    name: 'Bob Smith',
-    email: 'bob.smith@company.com',
-    position: 'Product Manager',
-    department: 'Product',
-    status: 'in-progress',
-    progress: 75,
-    startDate: 'Aug 5, 2025',
-    completedTasks: ['Documentation', 'IT Setup', 'Team Introduction']
-  },
-  {
-    id: 'e3',
-    name: 'Carol Davis',
-    email: 'carol.davis@company.com',
-    position: 'UX Designer',
-    department: 'Design',
-    status: 'in-progress',
-    progress: 50,
-    startDate: 'Aug 8, 2025',
-    completedTasks: ['Documentation', 'IT Setup']
-  },
-  {
-    id: 'e4',
-    name: 'David Wilson',
-    email: 'david.wilson@company.com',
-    position: 'Backend Engineer',
-    department: 'Engineering',
-    status: 'in-progress',
-    progress: 25,
-    startDate: 'Aug 10, 2025',
-    completedTasks: ['Documentation']
-  }
-])
+const onboardingEmployees = ref([])
 
 const selectedEmployees = ref([])
 const showAddEmployeeModal = ref(false)
@@ -541,4 +498,80 @@ const viewProgress = (employee) => {
   alert(`Viewing detailed progress for ${employee.name}`)
   // In a real app, this would navigate to a detailed progress page
 }
+
+// Fetch HIRED applications as onboarding employees from DB
+const fetchOnboardingEmployees = async () => {
+  try {
+    const companyId = localStorage.getItem('companyId')
+    if (!companyId) return
+    const { data: apps, error } = await supabase
+      .from('applications')
+      .select('id, job_seeker_id, updated_at, job_seeker_profiles ( first_name, last_name ), job_postings ( title, department )')
+      .eq('company_id', companyId)
+      .eq('status', 'HIRED')
+      .order('updated_at', { ascending: false })
+    if (error) throw error
+
+    onboardingEmployees.value = (apps || []).map(a => {
+      const first = a.job_seeker_profiles?.first_name || ''
+      const last = a.job_seeker_profiles?.last_name || ''
+      return {
+        id: a.id,
+        name: `${first} ${last}`.trim() || 'Employee',
+        email: '',
+        position: a.job_postings?.title || '',
+        department: a.job_postings?.department || '',
+        status: 'in-progress',
+        progress: 0,
+        startDate: new Date(a.updated_at).toLocaleDateString()
+      }
+    })
+  } catch (e) {
+    console.error('Failed to load onboarding employees:', e)
+  }
+}
+
+onMounted(async () => {
+  try {
+    await ensureHrSession()
+    await loadHRCompanyProfile()
+    await fetchOnboardingEmployees()
+  } catch (e) {}
+})
+
+// Company display name
+const companyProfile = ref(null)
+const profileError = ref('')
+const displayName = computed(() => {
+  if (companyProfile.value?.company_name) return companyProfile.value.company_name
+  const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+  return currentUser?.email || 'HR Manager'
+})
+
+const loadHRCompanyProfile = async () => {
+  try {
+    profileError.value = ''
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+    if (!currentUser.id) throw new Error('User session not found')
+    const { data, error } = await supabase
+      .from('company_profiles')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .single()
+    if (error || !data) throw new Error('Failed to load company profile')
+    companyProfile.value = data
+    if (data.id) localStorage.setItem('companyId', data.id)
+  } catch (e) {
+    console.error('HR profile load error:', e)
+    profileError.value = 'Failed to load user profile. Please try again.'
+  }
+}
+
+onMounted(async () => {
+  try {
+    await ensureHrSession()
+    await loadHRCompanyProfile()
+    await fetchOnboardingEmployees()
+  } catch (e) {}
+})
 </script>

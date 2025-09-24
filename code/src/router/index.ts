@@ -40,4 +40,29 @@ const router = createRouter({
   routes,
 })
 
+// Prevent navigating to Onboarding when not enrolled to a company
+router.beforeEach(async (to, from, next) => {
+  if (to.name !== 'Onboarding') return next()
+  try {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+    const supabaseUrl = localStorage.getItem('supabaseUrl') || import.meta.env.VITE_SUPABASE_URL
+    const supabaseKey = localStorage.getItem('supabaseKey') || import.meta.env.VITE_SUPABASE_ANON_KEY
+    if (!currentUser?.id || !supabaseUrl || !supabaseKey) return next()
+    const { createClient } = await import('@supabase/supabase-js')
+    const sb = createClient(supabaseUrl, supabaseKey)
+    const { data: profile } = await sb
+      .from('job_seeker_profiles')
+      .select('company_id')
+      .eq('user_id', currentUser.id)
+      .single()
+    if (!profile?.company_id) {
+      sessionStorage.setItem('showOnboardingAccessModal', '1')
+      return next({ name: 'JobSeekerHome' })
+    }
+    return next()
+  } catch (e) {
+    return next()
+  }
+})
+
 export default router

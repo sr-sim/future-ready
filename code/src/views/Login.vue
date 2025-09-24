@@ -847,9 +847,11 @@ const handleSignUp = async () => {
         sms_notifications: false
       }
 
-      const { error: profileError } = await supabase
+      const { data: createdCompany, error: profileError } = await supabase
         .from('company_profiles')
         .insert([companyProfile])
+        .select('id')
+        .single()
 
       if (profileError) {
         // If profile creation fails, delete the user
@@ -858,6 +860,10 @@ const handleSignUp = async () => {
           .delete()
           .eq('id', createdUser.id)
         throw new Error(profileError.message)
+      }
+
+      if (createdCompany?.id) {
+        localStorage.setItem('companyId', createdCompany.id)
       }
     }
 

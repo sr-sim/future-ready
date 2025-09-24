@@ -295,6 +295,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { ensureJobSeekerSession } from '../services/session'
 import { supabase } from '../lib/supabase'
 import { AIMatchingService } from '../services/aiMatchingService'
 import {
@@ -421,7 +422,7 @@ const startMatching = async () => {
 
     // Step 3: Matching with Companies
     matchingSteps.value[2].active = true
-    const jobMatchingResults = await AIMatchingService.performJobMatching(currentUser.id, 20)
+    const jobMatchingResults = await AIMatchingService.performJobMatching(currentUser.id, 50)
     matchingSteps.value[2].completed = true
     matchingSteps.value[2].active = false
     matchingProgress.value = 75
@@ -454,6 +455,7 @@ const startMatching = async () => {
     }
 
     // Save results to localStorage for the results page
+    // Sort matches by final similarity score (already sorted by service) and persist
     localStorage.setItem('aiMatchingResults', JSON.stringify({
       profile: jobMatchingResults.profile,
       matches: jobMatchingResults.matches,
@@ -476,7 +478,7 @@ const startMatching = async () => {
     isMatching.value = false
     currentPhase.value = 'start'
     // You could show an error message to the user here
-    alert('Error during AI matching. Please try again.')
+    alert(`AI matching failed: ${error?.message || 'Unknown error'}`)
   }
 }
 
@@ -532,7 +534,8 @@ const loadUserProfile = async () => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  try { await ensureJobSeekerSession() } catch (e) { return }
   loadUserProfile()
 })
 </script>

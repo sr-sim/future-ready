@@ -89,7 +89,7 @@
           <!-- Work Experience -->
           <section v-if="resumeData.experience && resumeData.experience.length > 0" class="mb-8">
             <h2 class="text-xl font-bold text-gray-800 mb-4 border-b-2 border-blue-600 pb-2">
-              Work Experience
+              Working Experience
             </h2>
             <div class="space-y-6">
               <div
@@ -107,7 +107,17 @@
                     {{ formatDate(exp.startDate) }} - {{ exp.current ? 'Present' : formatDate(exp.endDate) }}
                   </div>
                 </div>
-                <p class="text-gray-700 leading-relaxed" v-if="exp.description">{{ exp.description }}</p>
+                <div v-if="exp.description">
+                  <ul
+                    v-if="parseDescription(exp.description).length > 1"
+                    class="list-disc pl-5 text-gray-700 leading-relaxed"
+                  >
+                    <li v-for="(item, i) in parseDescription(exp.description)" :key="i">
+                      {{ item }}
+                    </li>
+                  </ul>
+                  <p v-else class="text-gray-700 leading-relaxed whitespace-pre-line">{{ exp.description }}</p>
+                </div>
               </div>
             </div>
           </section>
@@ -172,6 +182,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { supabase } from '../lib/supabase'
 import { 
   ArrowLeftIcon, 
   DownloadIcon, 
@@ -185,56 +196,22 @@ import {
 const route = useRoute()
 const router = useRouter()
 
-// Sample resume data - in real app, this would come from props, route params, or API
+// Reactive resume data loaded from database
 const resumeData = ref({
   personalInfo: {
-    fullName: 'Sarah Johnson',
-    email: 'sarah.johnson@example.com',
-    phone: '+60 12-345 6789',
-    location: ' kuala lumpur, malaysia',
-    linkedin: 'linkedin.com/in/sarahjohnson'
+    fullName: '',
+    email: '',
+    phone: '',
+    location: '',
+    linkedin: ''
   },
-  currentTitle: 'Senior React Developer',
-  summary: 'Experienced React Developer with 6+ years of expertise in building scalable web applications. Proven track record of leading development teams and delivering high-quality software solutions. Passionate about modern web technologies and best practices.',
-  skills: 'React, TypeScript, Node.js, GraphQL, AWS, Docker, Jest, MongoDB, Express.js, Git, Agile, Scrum',
-  experience: [
-    {
-      title: 'Senior React Developer',
-      company: 'Tech Solutions Inc.',
-      startDate: '2022-01',
-      endDate: '',
-      current: true,
-      description: 'Lead development of customer-facing web applications using React and TypeScript. Mentored junior developers and implemented best practices for code quality and testing.'
-    },
-    {
-      title: 'Frontend Developer',
-      company: 'Digital Agency Co.',
-      startDate: '2020-03',
-      endDate: '2021-12',
-      current: false,
-      description: 'Developed responsive web applications for various clients using React, Vue.js, and modern CSS frameworks. Collaborated with design teams to implement pixel-perfect UI components.'
-    },
-    {
-      title: 'Junior Web Developer',
-      company: 'StartUp Ventures',
-      startDate: '2018-06',
-      endDate: '2020-02',
-      current: false,
-      description: 'Built and maintained company website and internal tools. Gained experience in full-stack development using JavaScript, Node.js, and MongoDB.'
-    }
-  ],
-  education: [
-    {
-      degree: 'Bachelor of Science',
-      field: 'Computer Science',
-      institution: 'University of California, Berkeley',
-      year: '2018',
-      gpa: '3.8'
-    }
-  ],
-  matchScore: 92,
-  languages: 'English (Native), Spanish (Conversational)',
-  certifications: 'AWS Certified Developer, React Professional Certificate'
+  currentTitle: '',
+  summary: '',
+  skills: '',
+  experience: [],
+  education: [],
+  languages: '',
+  certifications: ''
 })
 
 // Computed property to parse skills string into array
@@ -248,6 +225,21 @@ const formatDate = (dateString) => {
   if (!dateString) return ''
   const date = new Date(dateString)
   return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
+}
+
+// Convert description string into bullet items
+// Accepts either multi-line text or inline ' - ' bullets
+const parseDescription = (text) => {
+  if (!text) return []
+  // Prioritize newlines
+  const byLine = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean)
+  if (byLine.length > 1) return byLine
+  // Fallback: split by a dash bullet pattern
+  const byDash = text
+    .split(/\s+-\s+/)
+    .map(s => s.replace(/^[-•\s]+/, '').trim())
+    .filter(Boolean)
+  return byDash.length > 1 ? byDash : [text.trim()]
 }
 
 // Navigation
@@ -331,12 +323,51 @@ const downloadPDF = () => {
     alert('Failed to generate PDF. Please try again.');
   }
 };
-// Load resume data on mount (in real app, fetch from API based on candidate ID)
-onMounted(() => {
-  const candidateId = route.params.id || route.query.candidateId
-  if (candidateId) {
-    // In real app: fetchResumeData(candidateId)
-    console.log('Loading resume for candidate:', candidateId)
+// Load resume data from Supabase based on the current user or a provided candidateId
+onMounted(async () => {
+  try {
+    const candidateId = route.params.id || route.query.candidateId
+    let profile
+    if (candidateId) {
+      const { data, error } = await supabase
+        .from('job_seeker_profiles')
+        .select('*')
+        .eq('id', candidateId)
+        .single()
+      if (error) throw error
+      profile = data
+    } else {
+      const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+      if (!currentUser.id) throw new Error('User session not found')
+      const { data, error } = await supabase
+        .from('job_seeker_profiles')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .single()
+      if (error) throw error
+      profile = data
+    }
+
+    if (profile) {
+      resumeData.value = {
+        personalInfo: {
+          fullName: `${profile.first_name || ''} ${profile.last_name || ''}`.trim(),
+          email: JSON.parse(localStorage.getItem('currentUser') || '{}').email || '',
+          phone: profile.phone || '',
+          location: profile.location || '',
+          linkedin: profile.linkedin_url || ''
+        },
+        currentTitle: profile.experience && Array.isArray(profile.experience) && profile.experience[0]?.title ? profile.experience[0].title : '',
+        summary: profile.summary || '',
+        skills: Array.isArray(profile.skills) ? profile.skills.join(', ') : (profile.skills || ''),
+        experience: Array.isArray(profile.experience) ? profile.experience : [],
+        education: Array.isArray(profile.education) ? profile.education : [],
+        languages: profile.languages || '',
+        certifications: profile.certifications || ''
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load resume:', e)
   }
 })
 </script>

@@ -349,6 +349,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { supabase } from '../lib/supabase'
+import { ensureJobSeekerSession } from '../services/session'
 import {
   UserIcon,
   BellIcon,
@@ -423,8 +424,20 @@ const fetchUserProfile = async () => {
 }
 
 // Load user profile when component mounts
-onMounted(() => {
+onMounted(async () => {
+  try {
+    await ensureJobSeekerSession()
+  } catch (e) {
+    return
+  }
   fetchUserProfile()
+  // If redirected from onboarding block, show modal
+  try {
+    if (sessionStorage.getItem('showOnboardingAccessModal') === '1') {
+      sessionStorage.removeItem('showOnboardingAccessModal')
+      alert('Sorry, this feature is only available after you have been enrolled to a company. As per checking, currently you are not being enrolled in any company. Please contact the admin if there is any error.\nadmin@klmms.com')
+    }
+  } catch {}
 })
 
 // Dashboard stats
