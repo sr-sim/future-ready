@@ -16,7 +16,7 @@ const menus = {
   jobseeker: [
     { name: "Home", to: "/jshome", icon: HomeIcon },
     { name: "Resume", to: "/resume", icon: StarIcon },
-    { name: "AI Resume Matching", to: "/jobmatch", icon: BarChart3Icon },
+    { name: "AI Job Matching", to: "/jobmatch", icon: BarChart3Icon },
     { name: "Matching Result", to: "/matchedresult", icon: BarChart3Icon },
     { name: "Onboarding Training", to: "/onboarding", icon: UploadCloudIcon },
   ],

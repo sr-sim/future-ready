@@ -85,7 +85,7 @@
         <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm font-medium text-gray-600">Profile Completion</p>
+              <p class="text-sm font-medium text-gray-600">Resume Completion</p>
               <p class="text-2xl font-bold text-gray-900">{{ profileCompletion }}%</p>
             </div>
             <div class="h-12 w-12 bg-blue-100 rounded-xl flex items-center justify-center">
@@ -276,7 +276,7 @@
                 class="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white p-3 rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 transition-all flex items-center justify-center"
               >
                 <UserIcon class="h-5 w-5 mr-2" />
-                Update Profile
+                Update Resume
               </button>
               <button 
                 @click="navigateToApplications"
@@ -313,7 +313,7 @@
             </div>
           </div>
 
-          <!-- Upcoming Events -->
+          <!-- Upcoming Events
           <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
             <div class="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4">
               <div class="flex items-center text-white">
@@ -339,7 +339,7 @@
                 </div>
               </div>
             </div>
-          </div>
+          </div> -->
         </div>
       </div>
     </div>
@@ -441,7 +441,7 @@ onMounted(async () => {
 })
 
 // Dashboard stats
-const profileCompletion = ref(85)
+const profileCompletion = ref(100)
 const applicationsSent = ref(12)
 const newApplicationsThisWeek = ref(3)
 const jobMatches = ref(28)
