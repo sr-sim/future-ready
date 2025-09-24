@@ -799,6 +799,72 @@
       </form>
     </div>
   </div>
+  
+  <!-- AI Matches Modal -->
+  <div
+    v-if="showAIModal"
+    class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+  >
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden">
+      <div class="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-4">
+        <div class="flex items-center justify-between text-white">
+          <div class="flex items-center">
+            <TargetIcon class="h-6 w-6 mr-3" />
+            <h2 class="text-xl font-bold">AI Matches — {{ aiModalJob?.title || 'Job' }}</h2>
+          </div>
+          <button @click="showAIModal = false" class="text-white hover:text-gray-200 transition-colors">
+            <XIcon class="h-6 w-6" />
+          </button>
+        </div>
+      </div>
+      <div class="p-6 space-y-4 overflow-y-auto max-h-[calc(90vh-80px)]">
+        <div v-if="isLoadingAIModal" class="text-center py-8">
+          <div class="animate-spin rounded-full h-10 w-10 border-4 border-purple-600 border-t-transparent mx-auto mb-3"></div>
+          <p class="text-sm text-gray-600">Analyzing applicants for this job...</p>
+        </div>
+        <div v-else>
+          <div v-if="aiModalMatches.length === 0" class="text-center py-8 text-gray-600">
+            No applicants found or no matches computed yet.
+          </div>
+          <div v-else class="space-y-3">
+            <div
+              v-for="m in aiModalMatches"
+              :key="m.job_seeker_id"
+              class="border border-gray-200 rounded-xl p-4"
+            >
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="font-semibold text-gray-900">{{ m.name || 'Candidate' }}</p>
+                  <p class="text-xs text-gray-500">{{ m.location }}</p>
+                </div>
+                <div class="text-right">
+                  <span :class="getMatchScoreColor(m.matchScore)" class="text-xl font-bold">{{ m.matchScore }}%</span>
+                  <div class="text-xs text-gray-500">Skills {{ m.skillsPercent }}% • Embedding {{ m.embeddingPercent }}%</div>
+                </div>
+              </div>
+              <div class="mt-2 flex items-center gap-2">
+                <button
+                  class="px-3 py-1 rounded-lg text-sm font-medium bg-blue-100 text-blue-700 hover:bg-blue-200"
+                  @click="viewResumeFromMatch(m)"
+                >
+                  View Resume
+                </button>
+              </div>
+              <div v-if="m.matchingSkills && m.matchingSkills.length" class="mt-2 flex flex-wrap gap-2">
+                <span
+                  v-for="s in m.matchingSkills"
+                  :key="s"
+                  class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs"
+                >
+                  {{ s }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
   </div>
 </template>
 
@@ -807,6 +873,7 @@ import { ref, computed, onMounted } from 'vue'
 import { ensureHrSession } from '../services/session'
 import { supabase } from '../lib/supabase'
 import JobPostingService from '../services/jobPostingService'
+import { AIMatchingService } from '../services/aiMatchingService'
 import {
   BriefcaseIcon,
   PlusIcon,
@@ -867,6 +934,12 @@ const loadHRCompanyProfile = async () => {
 const showCreateModal = ref(false)
 const editingJob = ref(null)
 const isSaving = ref(false)
+
+// AI Results Modal state
+const showAIModal = ref(false)
+const aiModalMatches = ref([])
+const aiModalJob = ref(null)
+const isLoadingAIModal = ref(false)
 
 // Delete modal state
 const showDeleteModal = ref(false)
@@ -1495,6 +1568,15 @@ const redirectToJobResults = (jobId) => {
   router.push({ name: 'results', params: { jobId } })
 }
 
+const viewResumeFromMatch = async (match) => {
+  try {
+    if (!match?.job_seeker_id) return
+    router.push({ name: 'ViewResume', query: { candidateId: match.job_seeker_id } })
+  } catch (e) {
+    console.error('Failed to open resume from match:', e)
+  }
+}
+
 // HR AI matching functionality
 const startHRAIMatching = async (jobId) => {
   // Initialize matching state
@@ -1524,14 +1606,28 @@ const startHRAIMatching = async (jobId) => {
   }
 
   // Show completion state
-  setTimeout(() => {
+  try {
+    isLoadingAIModal.value = true
+    const result = await AIMatchingService.performCandidateMatchingForJob(jobId, 100)
     aiMatchingState.value[jobId].phase = 'complete'
+    const avg = result.matches && result.matches.length > 0
+      ? Math.round(result.matches.reduce((s, m) => s + (m.matchScore || 0), 0) / result.matches.length)
+      : 0
+    const highs = result.matches.filter(m => (m.matchScore || 0) >= 70).length
     aiMatchingState.value[jobId].results = {
-      totalCandidates: Math.floor(Math.random() * 20) + 15, // 15-35 candidates
-      highMatches: Math.floor(Math.random() * 8) + 5, // 5-12 high matches
-      avgScore: Math.floor(Math.random() * 20) + 70 // 70-90% average score
+      totalCandidates: result.totalApplicants || 0,
+      highMatches: highs,
+      avgScore: avg
     }
-  }, 1000)
+    aiModalJob.value = result.job
+    aiModalMatches.value = result.matches || []
+    showAIModal.value = true
+  } catch (e) {
+    console.error('HR AI matching failed:', e)
+    alert(`AI matching failed: ${e?.message || 'Unknown error'}`)
+  } finally {
+    isLoadingAIModal.value = false
+  }
 }
 </script>
 

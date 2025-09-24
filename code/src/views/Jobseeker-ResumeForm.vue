@@ -1088,7 +1088,7 @@ onMounted(async () => {
             email: currentUser.email || '',
             phone: profile.phone || '',
             location: profile.location || '',
-          linkedin: profile.linkedin_url || ''
+            linkedin: profile.linkedin_url || ''
           },
           summary: profile.summary || '',
           experience: profile.experience || [

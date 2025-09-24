@@ -277,10 +277,16 @@
               </div>
               <button 
                 @click="applyToJob(job)"
-                class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-2 rounded-xl font-semibold transition-all flex items-center"
+                :disabled="hasApplied(job.id)"
+                :class="[
+                  'px-6 py-2 rounded-xl font-semibold transition-all flex items-center',
+                  hasApplied(job.id)
+                    ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white'
+                ]"
               >
                 <SendIcon class="h-4 w-4 mr-2" />
-                Apply Now
+                {{ hasApplied(job.id) ? 'Already Apply' : 'Apply Now' }}
               </button>
             </div>
           </div>
@@ -415,6 +421,7 @@ const itemsPerPage = ref(5)
 // Modal
 const showApplicationModal = ref(false)
 const selectedJob = ref(null)
+const appliedJobIds = ref(new Set())
 
 const allJobs = ref([])
 
@@ -456,7 +463,7 @@ const isRecent = (createdAt) => {
 const loadPublishedJobs = async () => {
   const { data, error } = await supabase
     .from('job_postings')
-    .select('id, title, department, location, job_type, experience_level, salary_min, salary_max, currency, created_at, scope, company_id, company_profiles ( company_name )')
+    .select('id, title, department, location, job_type, experience_level, salary_min, salary_max, currency, created_at, scope, company_id, company_profiles ( company_name, company_description )')
     .eq('status', 'PUBLISHED')
     .order('created_at', { ascending: false })
   if (error) {
@@ -494,9 +501,34 @@ const loadPublishedJobs = async () => {
     isNew: isRecent(row.created_at),
     department: row.department,
     description: row.scope,
-    companyDescription: '',
+    companyDescription: row.company_profiles?.company_description || '',
     requiredSkills: jobIdToSkills[row.id] || []
   }))
+
+  // After loading jobs, prefetch existing applications for current user to disable buttons
+  try {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+    if (currentUser.id) {
+      const { data: seeker } = await supabase
+        .from('job_seeker_profiles')
+        .select('id')
+        .eq('user_id', currentUser.id)
+        .single()
+      if (seeker?.id) {
+        const jobIds = jobs.map(j => j.id)
+        if (jobIds.length > 0) {
+          const { data: existingApps } = await supabase
+            .from('applications')
+            .select('job_posting_id')
+            .eq('job_seeker_id', seeker.id)
+            .in('job_posting_id', jobIds)
+          for (const a of existingApps || []) {
+            appliedJobIds.value.add(a.job_posting_id)
+          }
+        }
+      }
+    }
+  } catch {}
 }
 
 // Computed properties
@@ -643,15 +675,64 @@ const applyToJob = (job) => {
   showApplicationModal.value = true
 }
 
-const confirmApplication = () => {
-  console.log('Apply to:', selectedJob.value.company)
-  // Submit application
-  showApplicationModal.value = false
-  
-  // Show success message
-  alert(`Application submitted to ${selectedJob.value?.company}!`)
-  selectedJob.value = null
+const confirmApplication = async () => {
+  if (!selectedJob.value) return
+  try {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+    if (!currentUser.id) throw new Error('User session not found')
+
+    // Load job seeker profile to get job_seeker_id and company_id
+    const { data: seeker, error: seekerErr } = await supabase
+      .from('job_seeker_profiles')
+      .select('id, company_id')
+      .eq('user_id', currentUser.id)
+      .single()
+    if (seekerErr) throw seekerErr
+    if (!seeker?.id) throw new Error('Job seeker profile not found')
+
+    // Load the actual job posting to get company_id if needed
+    const { data: jobPosting, error: jobErr } = await supabase
+      .from('job_postings')
+      .select('id, company_id')
+      .eq('id', selectedJob.value.id)
+      .single()
+    if (jobErr) throw jobErr
+
+    const application = {
+      job_posting_id: jobPosting.id,
+      job_seeker_id: seeker.id,
+      company_id: jobPosting.company_id,
+      status: 'SUBMITTED'
+    }
+
+    // Insert application (unique constraint prevents duplicates)
+    const { error: appErr } = await supabase
+      .from('applications')
+      .insert([application])
+
+    if (appErr) {
+      // If unique constraint, treat as already applied
+      if (String(appErr.message || '').toLowerCase().includes('duplicate') || String(appErr.details || '').includes('already exists')) {
+        appliedJobIds.value.add(selectedJob.value.id)
+        alert('You already applied to this job.')
+      } else {
+        throw appErr
+      }
+    } else {
+      appliedJobIds.value.add(selectedJob.value.id)
+      alert(`Application submitted to ${selectedJob.value?.company}!`)
+    }
+
+  } catch (e) {
+    console.error('Application failed:', e)
+    alert(`Failed to submit application: ${e.message}`)
+  } finally {
+    showApplicationModal.value = false
+    selectedJob.value = null
+  }
 }
+
+const hasApplied = (jobId) => appliedJobIds.value.has(jobId)
 
 onMounted(async () => {
   try {

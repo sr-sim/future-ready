@@ -806,11 +806,7 @@ const handleSignUp = async () => {
         last_name: formData.value.lastName,
         phone: formData.value.phone,
         location: formData.value.location,
-        profile_visibility: 'PUBLIC',
-        allow_recruiter_contact: true,
-        email_notifications: true,
-        sms_notifications: false,
-        job_alerts: true,
+        linkedin_url: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }

@@ -264,7 +264,7 @@
               <StarIcon class="h-6 w-6 text-green-600" />
             </div>
             <div class="text-2xl font-bold text-gray-900">{{ matchingResults.highMatches }}</div>
-            <div class="text-sm text-gray-600">High Matches (80%+)</div>
+            <div class="text-sm text-gray-600">High Matches (70%+)</div>
           </div>
           <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 text-center">
             <div class="h-12 w-12 bg-purple-100 rounded-xl flex items-center justify-center mx-auto mb-4">
@@ -275,17 +275,42 @@
           </div>
         </div>
 
-        <!-- View Results Button -->
+        <!-- View Results Toggle -->
         <div class="text-center">
           <button
-            @click="viewResults"
+            @click="showDetailedResults = !showDetailedResults"
             class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold py-4 px-12 rounded-2xl shadow-xl transition-all duration-200 transform hover:scale-105"
           >
             <span class="flex items-center">
               <EyeIcon class="h-6 w-6 mr-3" />
-              View Detailed Results
+              {{ showDetailedResults ? 'Hide Detailed Results' : 'View Detailed Results' }}
             </span>
           </button>
+        </div>
+
+        <!-- Detailed Results Inline -->
+        <div v-if="showDetailedResults" class="mt-8 space-y-4">
+          <div
+            v-for="m in detailedMatches"
+            :key="m.id"
+            class="bg-white rounded-xl border border-gray-200 p-4"
+          >
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="font-semibold text-gray-900">{{ m.name }}</p>
+                <p class="text-xs text-gray-500">{{ m.industry }} • {{ m.size }}</p>
+                <p class="text-sm text-gray-700 mt-1">{{ m.position }} • {{ m.location }}</p>
+              </div>
+              <div class="text-right">
+                <span class="text-2xl font-bold" :class="getScoreColor(m.matchScore)">{{ m.matchScore }}%</span>
+                <div class="text-xs text-gray-500">{{ m.postedDate }}</div>
+              </div>
+            </div>
+            <p class="text-sm text-gray-600 mt-3">{{ m.description }}</p>
+            <div v-if="m.matchingSkills && m.matchingSkills.length" class="mt-3 flex flex-wrap gap-2">
+              <span v-for="s in m.matchingSkills" :key="s" class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">{{ s }}</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -384,6 +409,9 @@ const matchingResults = ref({
   averageScore: 76
 })
 
+const showDetailedResults = ref(false)
+const detailedMatches = ref([])
+
 // Methods
 const goBack = () => {
   // Navigate back to dashboard
@@ -454,15 +482,27 @@ const startMatching = async () => {
       averageScore: jobMatchingResults.averageScore
     }
 
-    // Save results to localStorage for the results page
-    // Sort matches by final similarity score (already sorted by service) and persist
-    localStorage.setItem('aiMatchingResults', JSON.stringify({
-      profile: jobMatchingResults.profile,
-      matches: jobMatchingResults.matches,
-      resumeScore: resumeScore.value,
-      matchingResults: matchingResults.value,
-      timestamp: new Date().toISOString()
-    }))
+    // Add high-scoring candidates (>=80) to Talent Pool per company
+    try {
+      const highScorers = (jobMatchingResults.matches || []).filter(m => Math.round(m.similarity_score * 100) >= 70)
+      if (highScorers.length > 0 && jobMatchingResults.profile?.id) {
+        const rows = highScorers.map(m => ({
+          company_id: m.company_id,
+          job_seeker_id: jobMatchingResults.profile.id
+        }))
+        // Upsert to avoid duplicates on (company_id, job_seeker_id)
+        // Requires a unique constraint on these columns in the DB
+        const { error: tpErr } = await supabase
+          .from('talent_pool')
+          .upsert(rows, { onConflict: 'company_id,job_seeker_id' })
+        if (tpErr) console.warn('Talent pool upsert failed:', tpErr.message)
+      }
+    } catch (e) {
+      console.warn('Talent pool processing skipped:', e?.message)
+    }
+
+    // Prepare inline detailed results
+    detailedMatches.value = await AIMatchingService.formatJobMatches(jobMatchingResults.matches, jobMatchingResults.profile)
 
     // Mark matching as completed
     localStorage.setItem('aiMatchingCompleted', 'true')
@@ -482,10 +522,7 @@ const startMatching = async () => {
   }
 }
 
-const viewResults = () => {
-  // Navigate to results page
-  router.push('/matchedresult')
-}
+// No navigation; results inline
 
 const getScoreColor = (score) => {
   if (score >= 80) return '#10b981' // green
