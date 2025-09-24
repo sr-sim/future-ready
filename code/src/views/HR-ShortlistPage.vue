@@ -16,7 +16,7 @@
           <div class="flex items-center space-x-4">
             <div class="flex items-center space-x-2 bg-gray-100 px-3 py-2 rounded-lg">
               <div class="h-2 w-2 bg-green-500 rounded-full"></div>
-              <span class="text-sm text-gray-700">HR Manager</span>
+              <span class="text-sm text-gray-700">{{ displayName }}</span>
             </div>
           </div>
         </div>  
@@ -94,26 +94,10 @@
                 <div>
                   <h3 class="text-lg font-bold text-gray-900">{{ candidate.name }}</h3>
                   <p class="text-gray-600 text-sm">{{ candidate.title }}</p>
-                  <p class="text-gray-500 text-xs">{{ candidate.experience }} years experience</p>
+                  <p class="text-gray-500 text-xs">Shortlisted: {{ candidate.shortlistedDate }}</p>
                 </div>
               </div>
-              <div class="text-right">
-                <div class="flex items-center justify-end mb-1">
-                  <div
-                    class="text-xl font-bold mr-2"
-                    :class="getScoreColor(candidate.matchScore)"
-                  >
-                    {{ candidate.matchScore }}%
-                  </div>
-                  <div
-                    class="px-3 py-1 rounded-full text-xs font-medium"
-                    :class="getMatchBadgeClass(candidate.matchScore)"
-                  >
-                    {{ getMatchLabel(candidate.matchScore) }}
-                  </div>
-                </div>
-                <p class="text-xs text-gray-500">Shortlisted: {{ candidate.shortlistedDate }}</p>
-              </div>
+              <div class="text-right"></div>
             </div>
 
             <!-- Skills -->
@@ -121,7 +105,7 @@
               <h4 class="text-sm font-semibold text-gray-700 mb-2">Key Skills</h4>
               <div class="flex flex-wrap gap-2">
                 <span
-                  v-for="skill in candidate.matchedSkills"
+                  v-for="skill in candidate.skills"
                   :key="skill"
                   class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium"
                 >
@@ -150,7 +134,7 @@
               </button>
               <button
                 v-if="candidate.status === 'emailSent'"
-                @click="openResultModal(candidate, 'approve')"
+                @click="approveOnboarding(candidate)"
                 class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
               >
                 <CheckIcon class="h-4 w-4 mr-2" />
@@ -172,12 +156,20 @@
                 View Resume
               </button> -->
               <RouterLink
-  :to="{ name: 'ViewResume', query: { candidateId: candidate.id } }"
+  :to="{ name: 'ViewResume', query: { candidateId: candidate.candidateId } }"
   class="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
 >
   <EyeIcon class="h-4 w-4 mr-2" />
   View Resume
 </RouterLink>
+              <button
+                v-if="candidate.status === 'emailSent' || candidate.status === 'shortlisted_sent'"
+                @click="approveOnboarding(candidate)"
+                class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+              >
+                <CheckIcon class="h-4 w-4 mr-2" />
+                Approve
+              </button>
             </div>
           </div>
         </div>
@@ -325,7 +317,8 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { ensureHrSession } from '../services/session'
 import { supabase } from '../lib/supabase'
 import { JobSeekerService } from '../services/jobSeekerService'
 import { 
@@ -344,113 +337,16 @@ import {
 } from 'lucide-vue-next'
 
 const FILTERS = [
-  { label: 'Email Not Sent', value: 'shortlisted' },
-  { label: 'Email Sent', value: 'emailSent' },
+  { label: 'Email Not Sent', value: 'shortlisted_not_sent' },
+  { label: 'Email Sent', value: 'shortlisted_sent' },
   { label: 'Rejected', value: 'rejected' },
   { label: 'Approved (Onboarding)', value: 'approved' }
 ]
 
-const selectedFilter = ref('shortlisted')
+const selectedFilter = ref('shortlisted_not_sent')
 
-// Add status property to candidates
-const shortlistedCandidates = ref([
-  {
-    id: 'c1',
-    name: 'Sarah Johnson',
-    email: 'sarah.johnson@example.com',
-    title: 'Senior React Developer',
-    experience: 6,
-    matchScore: 92,
-    matchedSkills: ['React', 'TypeScript', 'Node.js', 'GraphQL', 'AWS'],
-    shortlistedDate: 'Aug 5, 2025',
-    sentEmail: false,
-    status: 'shortlisted'
-  },
-  {
-    id: 'c2',
-    name: 'Michael Chen',
-    email: 'michael.chen@example.com',
-    title: 'Frontend Engineer',
-    experience: 4,
-    matchScore: 87,
-    matchedSkills: ['Vue.js', 'JavaScript', 'CSS', 'REST APIs'],
-    shortlistedDate: 'Aug 5, 2025',
-    sentEmail: true,
-    status: 'emailSent'
-  },
-  {
-    id: 'c3',
-    name: 'Emily Rodriguez',
-    email: 'emily.rodriguez@example.com',
-    title: 'Full Stack Developer',
-    experience: 5,
-    matchScore: 78,
-    matchedSkills: ['JavaScript', 'Python', 'React', 'MongoDB'],
-    shortlistedDate: 'Aug 6, 2025',
-    sentEmail: false,
-    status: 'shortlisted'
-  },
-  {
-    id: 'c4',
-    name: 'David Kim',
-    email: 'david.kim@example.com',
-    title: 'UI/UX Developer',
-    experience: 3,
-    matchScore: 65,
-    matchedSkills: ['HTML', 'CSS', 'JavaScript', 'Figma'],
-    shortlistedDate: 'Aug 6, 2025',
-    sentEmail: true,
-    status: 'emailSent'
-  },
-  {
-    id: 'c5',
-    name: 'Priya Singh',
-    email: 'priya.singh@example.com',
-    title: 'Backend Engineer',
-    experience: 7,
-    matchScore: 85,
-    matchedSkills: ['Node.js', 'Express', 'MongoDB', 'Docker'],
-    shortlistedDate: 'Aug 7, 2025',
-    sentEmail: true,
-    status: 'approved'
-  },
-  {
-    id: 'c6',
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    title: 'DevOps Specialist',
-    experience: 8,
-    matchScore: 90,
-    matchedSkills: ['AWS', 'Terraform', 'CI/CD', 'Kubernetes'],
-    shortlistedDate: 'Aug 7, 2025',
-    sentEmail: true,
-    status: 'rejected'
-  },
-  {
-    id: 'c7',
-    name: 'Linda Park',
-    email: 'linda.park@example.com',
-    title: 'QA Engineer',
-    experience: 5,
-    matchScore: 70,
-    matchedSkills: ['Selenium', 'Cypress', 'Jest', 'Postman'],
-    shortlistedDate: 'Aug 8, 2025',
-    sentEmail: false,
-    status: 'shortlisted'
-  },
-  {
-    id: 'c8',
-    name: 'Carlos Mendez',
-    email: 'carlos.mendez@example.com',
-    title: 'Mobile App Developer',
-    experience: 4,
-    matchScore: 80,
-    matchedSkills: ['Flutter', 'Dart', 'Firebase', 'REST APIs'],
-    shortlistedDate: 'Aug 8, 2025',
-    sentEmail: true,
-    status: 'emailSent'
-  }
-])
+// Loaded from DB
+const shortlistedCandidates = ref([])
 
 const selectedCandidates = ref([])
 const showEmailModal = ref(false)
@@ -475,7 +371,7 @@ const toggleSelectAll = () => {
   if (allSelected.value) {
     selectedCandidates.value = []
   } else {
-    selectedCandidates.value = selectable.map(c => c.id)
+    selectedCandidates.value = selectable.map(c => c.applicationId)
   }
 }
 
@@ -499,7 +395,7 @@ const getMatchLabel = (score) => {
 }
 
 const openEmailModal = (candidate) => {
-  currentEmailTargetIds.value = [candidate.id] // Set target to single candidate
+  currentEmailTargetIds.value = [candidate.applicationId] // Set target to single application
   emailForm.to = candidate.email
   emailForm.subject = `Interview Invitation for ${candidate.title} at [Company Name]`
   emailForm.body = `Dear ${candidate.name},\n\nThank you for your interest in the ${candidate.title} position at [Company Name]. We were very impressed with your profile and would like to invite you for an interview.\n\nPlease let us know your availability in the coming days.\n\nBest regards,\n[Your Name]\n[Your Title]`
@@ -507,9 +403,9 @@ const openEmailModal = (candidate) => {
 }
 
 const openBulkEmailModal = () => {
-  currentEmailTargetIds.value = selectedCandidates.value // Set target to selected candidates
+  currentEmailTargetIds.value = selectedCandidates.value // Set target to selected applications
   const selectedEmails = shortlistedCandidates.value
-    .filter(c => selectedCandidates.value.includes(c.id))
+    .filter(c => selectedCandidates.value.includes(c.applicationId))
     .map(c => c.email)
   
   emailForm.to = selectedEmails.join(', ')
@@ -535,13 +431,17 @@ const sendEmail = async () => {
   console.log('Sending email:', emailForm)
   alert('Email(s) sent successfully!')
 
-  // Update sentEmail status for the targeted candidates
-  currentEmailTargetIds.value.forEach(id => {
-    const candidate = shortlistedCandidates.value.find(c => c.id === id)
-    if (candidate) {
-      candidate.sentEmail = true
-    }
-  })
+  // Update email_status in DB and local state
+  try {
+    const { error } = await supabase
+      .from('applications')
+      .update({ email_status: 'SENT', updated_at: new Date().toISOString() })
+      .in('id', currentEmailTargetIds.value)
+    if (error) console.error('Email status update failed:', error)
+  } catch (e) { console.error(e) }
+  shortlistedCandidates.value = shortlistedCandidates.value.map(c =>
+    currentEmailTargetIds.value.includes(c.applicationId) ? { ...c, sentEmail: true, status: 'shortlisted_sent' } : c
+  )
   selectedCandidates.value = selectedCandidates.value.filter(
     id => !currentEmailTargetIds.value.includes(id)
   )
@@ -551,7 +451,6 @@ const sendEmail = async () => {
 
 const viewResume = (candidateId) => {
   alert(`Viewing resume for candidate ID: ${candidateId}`)
-  // In a real app, this would navigate to a resume viewer or open a PDF
 }
 
 const removeSelected = () => {
@@ -565,7 +464,13 @@ const removeSelected = () => {
 }
 
 const filteredCandidates = computed(() =>
-  shortlistedCandidates.value.filter(c => c.status === selectedFilter.value)
+  shortlistedCandidates.value.filter(c => {
+    if (selectedFilter.value === 'shortlisted_not_sent') return c.status === 'shortlisted' && !c.sentEmail
+    if (selectedFilter.value === 'shortlisted_sent') return c.status === 'shortlisted_sent' || (c.status === 'shortlisted' && c.sentEmail)
+    if (selectedFilter.value === 'rejected') return c.status === 'rejected'
+    if (selectedFilter.value === 'approved') return c.status === 'approved'
+    return false
+  })
 )
 
 // Result Email Modal
@@ -579,7 +484,7 @@ const resultForm = reactive({
 const currentResultTargetId = ref(null)
 
 const openResultModal = (candidate, action) => {
-  currentResultTargetId.value = candidate.id
+  currentResultTargetId.value = candidate.applicationId
   resultForm.to = candidate.email
   resultForm.action = action
   resultForm.subject = action === 'approve'
@@ -607,8 +512,20 @@ const sendResultEmail = async () => {
     // Simulate email sending
     await new Promise(resolve => setTimeout(resolve, 2000))
     
-    // Update candidate status
-    const candidate = shortlistedCandidates.value.find(c => c.id === currentResultTargetId.value)
+    // Update application status in DB
+    try {
+      const newStatus = resultForm.action === 'approve' ? 'APPROVED' : 'REJECTED'
+      const { error } = await supabase
+        .from('applications')
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq('id', currentResultTargetId.value)
+      if (error) throw error
+    } catch (e) {
+      console.error('Failed to update application status:', e)
+    }
+
+    // Update candidate status locally
+    const candidate = shortlistedCandidates.value.find(c => c.applicationId === currentResultTargetId.value)
     if (candidate) {
       candidate.status = resultForm.action === 'approve' ? 'approved' : 'rejected'
       
@@ -625,7 +542,7 @@ const sendResultEmail = async () => {
           
           if (companyProfile) {
             // Assign job seeker to company
-            await JobSeekerService.assignToCompany(candidate.id, companyProfile.id)
+            await JobSeekerService.assignToCompany(candidate.candidateId, companyProfile.id)
             alert('Candidate approved and assigned to company! They can now access company documents.')
           }
         } catch (error) {
@@ -644,4 +561,114 @@ const sendResultEmail = async () => {
     closeResultModal()
   }
 }
+
+// Direct approve to ONBOARDING from Email Sent section
+const approveOnboarding = async (candidate) => {
+  try {
+    const applicationId = candidate.applicationId
+    const companyId = localStorage.getItem('companyId')
+
+    // 1) Mark application as HIRED
+    const { error } = await supabase
+      .from('applications')
+      .update({ status: 'HIRED', updated_at: new Date().toISOString() })
+      .eq('id', applicationId)
+    if (error) throw error
+
+    // 2) Assign candidate to company in job_seeker_profiles
+    if (companyId && candidate.candidateId) {
+      const { error: profErr } = await supabase
+        .from('job_seeker_profiles')
+        .update({ company_id: companyId, updated_at: new Date().toISOString() })
+        .eq('id', candidate.candidateId)
+      if (profErr) throw profErr
+    }
+
+    // Update UI immediately
+    shortlistedCandidates.value = shortlistedCandidates.value.map(c =>
+      c.applicationId === applicationId ? { ...c, status: 'approved' } : c
+    )
+  } catch (e) {
+    console.error('Failed to approve onboarding:', e)
+    alert('Failed to approve candidate for onboarding.')
+  }
+}
+
+// Company display name
+const companyProfile = ref(null)
+const profileError = ref('')
+const displayName = computed(() => {
+  if (companyProfile.value?.company_name) return companyProfile.value.company_name
+  const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+  return currentUser?.email || 'HR Manager'
+})
+
+const loadHRCompanyProfile = async () => {
+  try {
+    profileError.value = ''
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+    if (!currentUser.id) throw new Error('User session not found')
+    const { data, error } = await supabase
+      .from('company_profiles')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .single()
+    if (error || !data) throw new Error('Failed to load company profile')
+    companyProfile.value = data
+    if (data.id) localStorage.setItem('companyId', data.id)
+  } catch (e) {
+    console.error('HR profile load error:', e)
+    profileError.value = 'Failed to load user profile. Please try again.'
+  }
+}
+
+onMounted(async () => {
+  try {
+    await ensureHrSession()
+    await loadHRCompanyProfile()
+    // Fetch shortlisted applications for this company from DB
+    const companyId = localStorage.getItem('companyId') || companyProfile.value?.id
+    if (companyId) {
+      const { data: apps } = await supabase
+        .from('applications')
+        .select('id, job_posting_id, job_seeker_id, status, email_status, updated_at, job_seeker_profiles ( id, first_name, last_name, skills )')
+        .eq('company_id', companyId)
+        .order('updated_at', { ascending: false })
+
+      const mapped = (apps || []).map(a => {
+        const first = a.job_seeker_profiles?.first_name || ''
+        const last = a.job_seeker_profiles?.last_name || ''
+        const name = `${first} ${last}`.trim() || 'Candidate'
+        const sent = (a.email_status || '').toUpperCase() === 'SENT'
+        let uiStatus = 'shortlisted'
+        const s = (a.status || '').toUpperCase()
+        if (s === 'REJECTED') uiStatus = 'rejected'
+        else if (s === 'APPROVED') uiStatus = 'approved'
+        else if (s === 'SHORTLISTED') uiStatus = sent ? 'shortlisted_sent' : 'shortlisted'
+        // Extract top skills (flatten JSON array if needed)
+        let skills = []
+        const rawSkills = a.job_seeker_profiles?.skills
+        if (Array.isArray(rawSkills)) {
+          skills = rawSkills.map(s => typeof s === 'string' ? s : (s?.name || s?.skill || '')).filter(Boolean)
+        } else if (rawSkills && typeof rawSkills === 'object') {
+          skills = Object.values(rawSkills).map(s => typeof s === 'string' ? s : (s?.name || s?.skill || '')).filter(Boolean)
+        }
+
+        return {
+          applicationId: a.id,
+          candidateId: a.job_seeker_id,
+          name,
+      email: '',
+      title: '',
+      experience: '',
+          skills,
+          shortlistedDate: new Date(a.updated_at).toLocaleDateString(),
+          sentEmail: sent,
+          status: uiStatus
+        }
+      })
+      shortlistedCandidates.value = mapped
+    }
+  } catch (e) {}
+})
 </script>

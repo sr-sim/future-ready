@@ -15,7 +15,7 @@
           <div class="flex items-center space-x-4">
             <div class="flex items-center space-x-2 bg-gray-100 px-3 py-2 rounded-lg">
               <div class="h-2 w-2 bg-green-500 rounded-full"></div>
-              <span class="text-sm text-gray-700">HR Manager</span>
+              <span class="text-sm text-gray-700">{{ displayName }}</span>
             </div>
             <button class="text-gray-400 hover:text-gray-600 transition-colors">
               <BellIcon class="h-5 w-5" />
@@ -29,7 +29,7 @@
       <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-xl p-8 mb-8 text-white">
         <div class="flex items-center justify-between">
           <div>
-            <h2 class="text-3xl font-bold mb-2">Welcome back, HR Manager!</h2>
+            <h2 class="text-3xl font-bold mb-2">Welcome back, {{ displayName }}!</h2>
             <p class="text-blue-100 text-lg mb-4">Here's what's happening with your talent acquisition today.</p>
             <div class="flex items-center space-x-4">
               <button 
@@ -163,7 +163,9 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import { ensureHrSession } from '../services/session'
+import { supabase } from '../lib/supabase'
 import {
   BarChart3Icon,
   BellIcon,
@@ -242,6 +244,46 @@ const getScoreColor = (score) => {
   if (score >= 60) return 'text-yellow-600'
   return 'text-red-600'
 }
+
+// HR Profile (Company) Loading
+const companyProfile = ref(null)
+const profileError = ref('')
+const displayName = computed(() => {
+  if (companyProfile.value?.company_name) return companyProfile.value.company_name
+  const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+  return currentUser?.email || 'HR Manager'
+})
+
+const loadHRCompanyProfile = async () => {
+  try {
+    profileError.value = ''
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+    if (!currentUser.id) throw new Error('User session not found')
+
+    const { data, error } = await supabase
+      .from('company_profiles')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .single()
+
+    if (error || !data) throw new Error('Failed to load company profile')
+    companyProfile.value = data
+    // cache companyId for other pages (e.g., job posting)
+    if (data.id) localStorage.setItem('companyId', data.id)
+  } catch (e) {
+    console.error('HR profile load error:', e)
+    profileError.value = 'Failed to load user profile. Please try again.'
+  }
+}
+
+onMounted(async () => {
+  try {
+    await ensureHrSession()
+    await loadHRCompanyProfile()
+  } catch (e) {
+    // ensureHrSession will redirect if needed
+  }
+})
 </script>
 
 <style scoped>

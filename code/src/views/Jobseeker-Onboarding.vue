@@ -646,6 +646,19 @@
     </div>
   </div>
 
+  <!-- Access Restriction Modal -->
+  <div v-if="showAccessModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl p-6 max-w-lg mx-4">
+      <h3 class="text-lg font-bold text-gray-900 mb-3">Access Restricted</h3>
+      <p class="text-gray-700 text-sm whitespace-pre-line">
+        Sorry, this feature is only available after you have been enrolled to a company. As per checking, currently you are not being enrolled in any company. Please contact the admin if there is any error.
+        \nadmin@klmms.com
+      </p>
+      <div class="mt-4 flex justify-end">
+        <button @click="showAccessModal = false" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">OK</button>
+      </div>
+    </div>
+  </div>
   <!-- Document Viewer Modal -->
   <div v-if="showDocumentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-5/6 flex flex-col">
@@ -732,6 +745,8 @@
 
 <script setup>
 import { ref, computed, nextTick, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { ensureJobSeekerSession } from '../services/session'
 import { supabase } from '../lib/supabase'
 import { DocumentService } from '../services/documentService'
 import EnhancedDocumentService from '../services/enhancedDocumentService.js'
@@ -768,6 +783,9 @@ const userInitials = computed(() => {
   return userName.value.split(' ').map(n => n[0]).join('')
 })
 const companyName = ref('TechCorp Solutions')
+const router = useRouter()
+const isAssignedToCompany = ref(false)
+const showAccessModal = ref(false)
 
 // Navigation state
 const activeMenu = ref('onboarding')
@@ -1050,6 +1068,11 @@ const closeDropdown = () => {
 }
 
 const setActiveSection = (section) => {
+  if (!isAssignedToCompany.value) {
+    showAccessModal.value = true
+    dropdownOpen.value = null
+    return
+  }
   activeSection.value = section
   dropdownOpen.value = null
 }
@@ -1346,11 +1369,13 @@ const loadCompanyDocuments = async () => {
     
     // Check if job seeker is assigned to a company
     if (!jobSeekerProfile.company_id) {
+      isAssignedToCompany.value = false
       documentError.value = 'You are not yet assigned to a company. Please wait for your hiring confirmation.'
       companyDocuments.value = []
       return
     }
-    
+    isAssignedToCompany.value = true
+
     // Get company name for display
     const { data: companyProfile, error: companyError } = await supabase
       .from('company_profiles')
@@ -1471,8 +1496,15 @@ const loadChatHistory = async () => {
 
 // Load user profile when component mounts
 onMounted(async () => {
+  try { await ensureJobSeekerSession() } catch (e) { return }
   await loadUserProfile()
   await loadCompanyDocuments()
+  if (!isAssignedToCompany.value) {
+    showAccessModal.value = true
+    // optionally redirect away from onboarding after showing modal briefly
+    // setTimeout(() => router.push('/jshome'), 2000)
+    return
+  }
   await loadChatHistory()
 })
 </script>

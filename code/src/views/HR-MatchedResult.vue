@@ -14,6 +14,10 @@
           </div>
           
           <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-2 bg-gray-100 px-3 py-2 rounded-lg">
+              <div class="h-2 w-2 bg-green-500 rounded-full"></div>
+              <span class="text-sm text-gray-700">{{ displayName }}</span>
+            </div>
             <div class="relative">
               <button
                 @click="toggleAIHistoryDropdown"
@@ -68,12 +72,7 @@
               </div>
             </div>
           
-                      <div class="flex items-center space-x-4">
-            <div class="flex items-center space-x-2 bg-gray-100 px-3 py-2 rounded-lg">
-              <div class="h-2 w-2 bg-green-500 rounded-full"></div>
-              <span class="text-sm text-gray-700">HR Manager</span>
-            </div>
-          </div>
+                      
           </div>
         </div>
       </div>
@@ -349,6 +348,8 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { ensureHrSession } from '../services/session'
+import { supabase } from '../lib/supabase'
 import {
   ArrowLeftIcon,
   TargetIcon,
@@ -360,9 +361,35 @@ import {
   ChevronDownIcon
 } from 'lucide-vue-next'
 
-// User data
-const userName = ref('John Smith')
-const userInitials = computed(() => userName.value.split(' ').map(n => n[0]).join(''))
+// Company display name
+const companyProfile = ref(null)
+const profileError = ref('')
+const displayName = computed(() => {
+  if (companyProfile.value?.company_name) return companyProfile.value.company_name
+  const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+  return currentUser?.email || 'HR Manager'
+})
+
+const loadHRCompanyProfile = async () => {
+  try {
+    profileError.value = ''
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+    if (!currentUser.id) throw new Error('User session not found')
+
+    const { data, error } = await supabase
+      .from('company_profiles')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .single()
+
+    if (error || !data) throw new Error('Failed to load company profile')
+    companyProfile.value = data
+    if (data.id) localStorage.setItem('companyId', data.id)
+  } catch (e) {
+    console.error('HR profile load error:', e)
+    profileError.value = 'Failed to load user profile. Please try again.'
+  }
+}
 
 // Job data (would come from props or route params in real app)
 const selectedJob = ref({
@@ -790,8 +817,11 @@ const viewAIMatchHistory = (job) => {
 }
 
 // Initialize component
-onMounted(() => {
-  // Component initialization
+onMounted(async () => {
+  try {
+    await ensureHrSession()
+    await loadHRCompanyProfile()
+  } catch (e) {}
 })
 </script>
 
