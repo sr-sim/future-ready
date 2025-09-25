@@ -275,43 +275,19 @@
           </div>
         </div>
 
-        <!-- View Results Toggle -->
+        <!-- View Results Button -->
         <div class="text-center">
           <button
-            @click="showDetailedResults = !showDetailedResults"
+            @click="viewDetailedResults"
             class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold py-4 px-12 rounded-2xl shadow-xl transition-all duration-200 transform hover:scale-105"
           >
             <span class="flex items-center">
               <EyeIcon class="h-6 w-6 mr-3" />
-              {{ showDetailedResults ? 'Hide Detailed Results' : 'View Detailed Results' }}
+              View Detailed Results
             </span>
           </button>
         </div>
 
-        <!-- Detailed Results Inline -->
-        <div v-if="showDetailedResults" class="mt-8 space-y-4">
-          <div
-            v-for="m in detailedMatches"
-            :key="m.id"
-            class="bg-white rounded-xl border border-gray-200 p-4"
-          >
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="font-semibold text-gray-900">{{ m.name }}</p>
-                <p class="text-xs text-gray-500">{{ m.industry }} • {{ m.size }}</p>
-                <p class="text-sm text-gray-700 mt-1">{{ m.position }} • {{ m.location }}</p>
-              </div>
-              <div class="text-right">
-                <span class="text-2xl font-bold" :class="getScoreColor(m.matchScore)">{{ m.matchScore }}%</span>
-                <div class="text-xs text-gray-500">{{ m.postedDate }}</div>
-              </div>
-            </div>
-            <p class="text-sm text-gray-600 mt-3">{{ m.description }}</p>
-            <div v-if="m.matchingSkills && m.matchingSkills.length" class="mt-3 flex flex-wrap gap-2">
-              <span v-for="s in m.matchingSkills" :key="s" class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">{{ s }}</span>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -409,8 +385,6 @@ const matchingResults = ref({
   averageScore: 76
 })
 
-const showDetailedResults = ref(false)
-const detailedMatches = ref([])
 
 // Methods
 const goBack = () => {
@@ -501,8 +475,6 @@ const startMatching = async () => {
       console.warn('Talent pool processing skipped:', e?.message)
     }
 
-    // Prepare inline detailed results
-    detailedMatches.value = await AIMatchingService.formatJobMatches(jobMatchingResults.matches, jobMatchingResults.profile)
 
     // Mark matching as completed
     localStorage.setItem('aiMatchingCompleted', 'true')
@@ -522,7 +494,10 @@ const startMatching = async () => {
   }
 }
 
-// No navigation; results inline
+const viewDetailedResults = () => {
+  // Navigate to the detailed results page
+  router.push('/matchedresult')
+}
 
 const getScoreColor = (score) => {
   if (score >= 80) return '#10b981' // green

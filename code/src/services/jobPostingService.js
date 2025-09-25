@@ -89,7 +89,6 @@ export class JobPostingService {
       position: idx + 1
     })).filter(r => r.skill)
 
-    const required_skills = requirementsArr.map(r => r.skill)
     const total_score = requirementsArr.reduce((sum, r) => sum + (r.score || 0), 0)
     const requirements_json = requirementsArr.map(({ position, ...rest }) => rest)
 
@@ -111,7 +110,6 @@ export class JobPostingService {
         is_remote: (form.jobType === 'Remote') || false,
         requirements_json,
         total_score,
-        required_skills,
         status: 'DRAFT'
       })
       .select('*')
@@ -155,7 +153,6 @@ export class JobPostingService {
       position: idx + 1
     })).filter(r => r.skill)
 
-    const required_skills = requirementsArr.map(r => r.skill)
     const total_score = requirementsArr.reduce((sum, r) => sum + (r.score || 0), 0)
     const requirements_json = requirementsArr.map(({ position, ...rest }) => rest)
 
@@ -175,7 +172,6 @@ export class JobPostingService {
         is_remote: (form.jobType === 'Remote') || false,
         requirements_json,
         total_score,
-        required_skills,
         updated_at: new Date().toISOString()
       })
       .eq('id', jobId)
