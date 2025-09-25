@@ -106,11 +106,44 @@
               <div class="mt-1 text-blue-100 text-sm">
                 {{ selectedJob.applications }} applications
               </div>
+              <div class="mt-3">
+                <button
+                  @click="startJobAIMatching"
+                  :disabled="isAIMatching || !selectedJob"
+                  class="bg-white/20 hover:bg-white/30 disabled:bg-white/10 disabled:cursor-not-allowed text-white px-3 py-1 rounded-lg text-sm font-medium"
+                >
+                  <span v-if="!isAIMatching">Start AI Matching</span>
+                  <span v-else>Analyzing...</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
         
         <div class="p-6">
+          <!-- AI Matches Dropdown -->
+          <div v-if="aiMatches.length > 0" class="mb-6">
+            <details class="bg-green-50 border border-green-200 rounded-xl">
+              <summary class="cursor-pointer px-4 py-3 text-green-800 font-semibold">AI Matches for Applicants ({{ aiMatches.length }})</summary>
+              <div class="p-4 space-y-3">
+                <div v-for="m in aiMatches" :key="m.job_seeker_id" class="bg-white rounded-lg border border-gray-200 p-4">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="font-semibold text-gray-900">{{ m.name || 'Candidate' }}</p>
+                      <p class="text-xs text-gray-500">{{ m.location }}</p>
+                    </div>
+                    <div class="text-right">
+                      <span class="text-xl font-bold" :class="getScoreColor(m.matchScore)">{{ m.matchScore }}%</span>
+                      <div class="text-xs text-gray-500">Skills {{ m.skillsPercent }}% • Embedding {{ m.embeddingPercent }}%</div>
+                    </div>
+                  </div>
+                  <div v-if="m.matchingSkills && m.matchingSkills.length" class="mt-2 flex flex-wrap gap-2">
+                    <span v-for="s in m.matchingSkills" :key="s" class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">{{ s }}</span>
+                  </div>
+                </div>
+              </div>
+            </details>
+          </div>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <p class="text-sm font-semibold text-gray-700 mb-1">Job Type</p>
@@ -350,6 +383,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { ensureHrSession } from '../services/session'
 import { supabase } from '../lib/supabase'
+import { AIMatchingService } from '../services/aiMatchingService'
 import {
   ArrowLeftIcon,
   TargetIcon,
@@ -369,6 +403,24 @@ const displayName = computed(() => {
   const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
   return currentUser?.email || 'HR Manager'
 })
+// AI matching state for applicants of selected job
+const isAIMatching = ref(false)
+const aiMatches = ref([])
+
+const startJobAIMatching = async () => {
+  if (!selectedJob.value?.id) return
+  try {
+    isAIMatching.value = true
+    aiMatches.value = []
+    const result = await AIMatchingService.performCandidateMatchingForJob(selectedJob.value.id, 50)
+    aiMatches.value = result.matches || []
+  } catch (e) {
+    console.error('HR AI matching failed:', e)
+    alert(`AI matching failed: ${e?.message || 'Unknown error'}`)
+  } finally {
+    isAIMatching.value = false
+  }
+}
 
 const loadHRCompanyProfile = async () => {
   try {
@@ -395,8 +447,8 @@ const loadHRCompanyProfile = async () => {
 const selectedJob = ref({
   id: 1,
   title: 'Senior Frontend Developer',
-  department: 'Engineering',
-  location: 'San Francisco, CA',
+  department: 'Software Development',
+  location: 'Kuala Lumpur, Malaysia',
   jobType: 'Full-time',
   salary: 'RM12000 - RM15000',
   experience: 'Senior Level',
@@ -605,7 +657,7 @@ const aiMatchHistory = ref([
   {
     id: 1,
     title: 'Senior Backend Developer',
-    department: 'Engineering',
+    department: 'Software Development',
     matchedDate: '2 days ago',
     totalCandidates: 18,
     topMatchScore: 94
@@ -629,7 +681,7 @@ const aiMatchHistory = ref([
   {
     id: 4,
     title: 'DevOps Engineer',
-    department: 'Engineering',
+    department: 'Software Development',
     matchedDate: '3 weeks ago',
     totalCandidates: 8,
     topMatchScore: 87
